@@ -234,13 +234,12 @@ export const getStats = (filters = {}) => {
   const totalCandidates = salespersons.length;
   const totalManagers   = managerId ? 1 : currentData.managers.length;
 
-  const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // '2026-08-01'
-  const currentMonth = systemTodayStr.slice(0, 7); // '2026-08'
-
+  const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const dates = visits.map(v => v.visit_date).filter(Boolean).sort();
   const latestDateInDb = dates[dates.length - 1] || systemTodayStr;
   const latestDate = visits.some(v => v.visit_date === systemTodayStr) ? systemTodayStr : latestDateInDb;
-
+  
+  const currentMonth = latestDate.slice(0, 7);
   const todayVisits    = visits.filter(v => v.visit_date === latestDate).length;
   const mtdVisits      = visits.filter(v => (v.visit_date || '').startsWith(currentMonth)).length;
   const ltdVisits      = visits.length;
@@ -291,8 +290,10 @@ export const getVisitsByCity = (filters = {}) => {
 
 // ─── getManagerPerformance ───
 export const getManagerPerformance = () => {
-  const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // '2026-08-01'
-  const currentMonth = systemTodayStr.slice(0, 7); // '2026-08'
+  const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const allVisitsDates = currentData.visits.map(v => v.visit_date).filter(Boolean).sort();
+  const globalLatestDate = allVisitsDates[allVisitsDates.length - 1] || systemTodayStr;
+  const currentMonth = globalLatestDate.slice(0, 7);
   return currentData.managers.map(manager => {
     const activeBDs = new Set(currentData.salespersons.filter(s => s.manager_id === manager.id).map(s => s.name.toLowerCase().trim()));
     const mVisits = currentData.visits.filter(v => v.manager_email === manager.email && activeBDs.has((v.bd_name || '').toLowerCase().trim()));
@@ -655,9 +656,13 @@ export const fetchLiveData = async () => {
     });
     const orderRecords = [...orderRecordsById.values()];
 
-    const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // '2026-08-01'
-    const DYNAMIC_TODAY_DATE = systemTodayStr;
-    const DYNAMIC_MTD_MONTH = systemTodayStr.slice(0, 7); // '2026-08'
+    const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits];
+    const visitDates = allVisits.map(v => v.visit_date).filter(Boolean).sort();
+    const latestVisitDate = visitDates[visitDates.length - 1] || systemTodayStr;
+
+    const DYNAMIC_TODAY_DATE = latestVisitDate;
+    const DYNAMIC_MTD_MONTH = DYNAMIC_TODAY_DATE.slice(0, 7);
 
     function localNormalizeText(value) {
       return String(value || '')
@@ -721,7 +726,6 @@ export const fetchLiveData = async () => {
 
     const activeBDNames = new Set(MASTER_CANDIDATES.map(s => s.name.toLowerCase().trim()));
 
-    const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits];
     const compiledVisits = allVisits
       .filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()))
       .map(v => {
