@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { getDailyTimeline } from '../data/dataService';
+import { getDailyTimeline, getAvailableDates } from '../data/dataService';
 import { LogIn, LogOut, Coffee, MapPin, Camera, Phone, Tag, Calendar } from 'lucide-react';
 
 const typeConfig = {
@@ -10,17 +10,10 @@ const typeConfig = {
   SYSTEM: { icon: Tag,    nodeClass: 'logout', label: 'Info'   },
 };
 
-const DATES = [
-  { v: '2026-07-30', l: '30 Jul 2026 (Today)'     },
-  { v: '2026-07-29', l: '29 Jul 2026 (Yesterday)' },
-  { v: '2026-07-28', l: '28 Jul 2026'              },
-  { v: '2026-07-27', l: '27 Jul 2026'              },
-  { v: '2026-07-26', l: '26 Jul 2026'              },
-  { v: '2026-07-25', l: '25 Jul 2026'              },
-];
-
 const DailyTimeline = ({ candidateName }) => {
-  const [date, setDate] = useState('2026-07-30');
+  const dynamicDates = useMemo(() => getAvailableDates(), []);
+  const initialDate = dynamicDates[0]?.v || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const [date, setDate] = useState(initialDate);
   const events = useMemo(() => getDailyTimeline(candidateName, date), [candidateName, date]);
 
   return (
@@ -34,7 +27,7 @@ const DailyTimeline = ({ candidateName }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Calendar size={13} color="var(--text-faint)" />
           <select className="select" style={{ width: 'auto', fontSize: 12, padding: '6px 12px' }} value={date} onChange={e => setDate(e.target.value)}>
-            {DATES.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
+            {dynamicDates.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
           </select>
         </div>
       </div>

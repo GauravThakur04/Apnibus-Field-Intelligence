@@ -12,7 +12,7 @@ import RedAlertDashboard from './components/RedAlertDashboard';
 import ManagerTeamDashboard from './components/ManagerTeamDashboard';
 import IndividualBDDashboard from './components/IndividualBDDashboard';
 
-import { getData } from './data/dataService';
+import { getData, fetchLiveData } from './data/dataService';
 
 const MGR_EMAIL_MAP = {
   201: 'rajnish.kumar@apnibus.com',
@@ -80,6 +80,19 @@ const App = () => {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // ─── Fetch live CSV data on mount ───
+  useEffect(() => {
+    const initLiveFetch = async () => {
+      try {
+        await fetchLiveData();
+        handleDataChanged();
+      } catch (err) {
+        console.error("Mount live fetch failed:", err);
+      }
+    };
+    initLiveFetch();
   }, []);
 
   // Update current manager param state when activeTab changes

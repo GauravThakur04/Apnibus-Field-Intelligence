@@ -4,12 +4,14 @@ import {
   User, Award, Activity, Flame, ShieldAlert, ShieldCheck, ChevronRight,
   DollarSign, TrendingUp, UserCheck, Briefcase, Zap
 } from 'lucide-react';
-import { getDailyTimeline, getData, getStats, getVisitDurationMinutes, getVisitTime, fmtTime } from '../data/dataService';
+import { getDailyTimeline, getData, getStats, getVisitDurationMinutes, getVisitTime, fmtTime, getAvailableDates } from '../data/dataService';
 import { getBDRiskScores } from '../data/aiEngine';
 
 const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
   const allData = getData();
-  const [selectedDate, setSelectedDate] = useState('2026-07-30');
+  const dynamicDates = useMemo(() => getAvailableDates(), []);
+  const initialDate = dynamicDates[0]?.v || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const [selectedDate, setSelectedDate] = useState(initialDate);
 
   // Find candidate details
   const candidate = useMemo(() => {
@@ -39,11 +41,19 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
     return allData.visits.filter(v => (v.bd_name || '').toLowerCase() === (candidate.name || '').toLowerCase());
   }, [candidate, allData]);
 
+  const dateLabelsMap = useMemo(() => {
+    const map = {};
+    dynamicDates.forEach(item => {
+      map[item.v] = item.l;
+    });
+    return map;
+  }, [dynamicDates]);
+
   // Unique dates for date picker dropdown
   const availableDates = useMemo(() => {
     const dates = Array.from(new Set(candidateVisits.map(v => v.visit_date))).sort().reverse();
-    return dates.length > 0 ? dates : ['2026-07-30', '2026-07-29', '2026-07-28'];
-  }, [candidateVisits]);
+    return dates.length > 0 ? dates : dynamicDates.map(d => d.v);
+  }, [candidateVisits, dynamicDates]);
 
   // Daily Activity timeline for selected date
   const timelineEvents = useMemo(() => {
@@ -93,7 +103,7 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
             value={selectedDate} onChange={e => setSelectedDate(e.target.value)}>
             {availableDates.map(d => (
               <option key={d} value={d}>
-                {d === '2026-07-30' ? '30 Jul, 2026 (Today)' : d === '2026-07-29' ? '29 Jul, 2026 (Yesterday)' : d}
+                {dateLabelsMap[d] || d}
               </option>
             ))}
           </select>
@@ -101,11 +111,10 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
       </div>
 
       {/* Primary KPI Row — Matched Sales & Revenue Breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
         {[
           { label: 'FTD Sales & Revenue (Today)', val: `${candidate.ftd_sales ?? 0} Sales (₹ ${(candidate.ftd_revenue ?? 0).toLocaleString()})`, color: (candidate.ftd_sales ?? 0) > 0 ? '#10b981' : 'var(--text-muted)', bg: (candidate.ftd_sales ?? 0) > 0 ? 'rgba(16,185,129,0.08)' : 'var(--bg-input)' },
           { label: 'MTD Sales & Revenue (Month)', val: `${candidate.mtd_sales ?? 0} Sales (${(candidate.mtd_revenue || 0) >= 100000 ? `₹ ${((candidate.mtd_revenue || 0) / 100000).toFixed(1)} L` : `₹ ${(((candidate.mtd_revenue || 0) / 1000)).toFixed(1)}k`})`, color: '#2563eb', bg: 'rgba(37,99,235,0.08)' },
-          { label: 'LTD Sales & Revenue (Lifetime)', val: `${candidate.ltd_sales ?? 0} Sales (${(candidate.ltd_revenue || 0) >= 100000 ? `₹ ${((candidate.ltd_revenue || 0) / 100000).toFixed(1)} L` : `₹ ${(((candidate.ltd_revenue || 0) / 1000)).toFixed(1)}k`})`, color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
           { label: 'MTD Attendance %', val: `${candidate.mtd_attendance_pct ?? candidate.attendance_rate ?? 85}% (${candidate.mtd_present_days || candidate.present_days || 0}P / ${candidate.mtd_absent_days || candidate.absent_days || 0}A)`, color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)' },
           { label: 'Avg Field Hours', val: `${candidate.avg_field_hours || 8.5} hrs/day`, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
           { label: 'AI Risk Rating', val: `${riskProfile.risk_level} (${riskProfile.risk_score})`, color: riskColor, bg: `${riskColor}12` },

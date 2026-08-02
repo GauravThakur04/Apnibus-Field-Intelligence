@@ -13,7 +13,6 @@ const CandidateLeaderboard = ({ selectedManagerId, setSelectedManagerId, onSelec
     { label: 'Candidates', value: stats.totalCandidates, icon: UserCheck, color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
     { label: "Today's Visits", value: stats.todayVisits, icon: Flame, color: '#f43f5e', bg: 'rgba(244,63,94,0.08)' },
     { label: 'MTD Visits', value: stats.mtdVisits.toLocaleString(), icon: Zap, color: '#2563eb', bg: 'rgba(37,99,235,0.08)' },
-    { label: 'LTD Visits', value: stats.ltdVisits.toLocaleString(), icon: Clock, color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)' },
     { label: 'Avg Verified %', value: `${stats.verificationRate}%`, icon: Percent, color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
   ];
 
@@ -36,7 +35,7 @@ const CandidateLeaderboard = ({ selectedManagerId, setSelectedManagerId, onSelec
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
         {kpis.map((k, i) => {
           const Icon = k.icon;
           return (
@@ -71,7 +70,6 @@ const CandidateLeaderboard = ({ selectedManagerId, setSelectedManagerId, onSelec
                   <th>Manager</th>
                   <th>Today</th>
                   <th>MTD</th>
-                  <th>LTD</th>
                   <th>Verified %</th>
                   <th>Last Visit</th>
                   <th>Day Start</th>
@@ -89,7 +87,6 @@ const CandidateLeaderboard = ({ selectedManagerId, setSelectedManagerId, onSelec
                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.manager_name.split(' ')[0]}</td>
                     <td>{s.today_visits}</td>
                     <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{s.mtd_visits}</td>
-                    <td>{s.ltd_visits}</td>
                     <td>
                       <span className={`badge ${s.verified_percent >= 50 ? 'badge-success' : 'badge-warning'}`}>
                         <span className="badge-dot" />{s.verified_percent}%

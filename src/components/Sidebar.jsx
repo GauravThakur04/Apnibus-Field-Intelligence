@@ -29,8 +29,12 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
     <aside className="sidebar">
       {/* Brand Header */}
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon" style={isManagerPortal && activeMgrObj ? { background: activeMgrObj.color } : {}}>
-          <Bus size={18} />
+        <div className="sidebar-logo-icon" style={{ background: 'transparent', boxShadow: 'none', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img 
+            src="/logo.png" 
+            alt="ApniBus Logo" 
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+          />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span className="sidebar-logo-text">ApniBus</span>

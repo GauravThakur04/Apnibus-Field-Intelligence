@@ -84,7 +84,6 @@ const ManagerPerformance = () => {
                   <th>Candidates</th>
                   <th>Today</th>
                   <th>MTD</th>
-                  <th>LTD</th>
                   <th>Verified %</th>
                   <th>7-Day Trend</th>
                 </tr>
@@ -109,7 +108,6 @@ const ManagerPerformance = () => {
                     <td style={{ fontWeight: 600 }}>{m.candidates}</td>
                     <td>{m.today}</td>
                     <td style={{ fontWeight: 700, color: colors[i % 3] }}>{m.mtd}</td>
-                    <td>{m.ltd.toLocaleString()}</td>
                     <td>
                       <span className={`badge ${m.verifiedPercent >= 50 ? 'badge-success' : 'badge-warning'}`}>
                         <span className="badge-dot" />

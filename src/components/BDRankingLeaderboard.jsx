@@ -36,7 +36,6 @@ const BDRankingLeaderboard = ({ managerId = null, onSelectCandidate }) => {
     return list.sort((a, b) => {
       if (rankBy === 'mtd_sales') return (b.mtd_sales || 0) - (a.mtd_sales || 0);
       if (rankBy === 'ftd_sales') return (b.ftd_sales || 0) - (a.ftd_sales || 0);
-      if (rankBy === 'ltd_sales') return (b.ltd_sales || 0) - (a.ltd_sales || 0);
       if (rankBy === 'attendance') return (b.attendance_rate || 0) - (a.attendance_rate || 0);
       return (b.mtd_visits || 0) - (a.mtd_visits || 0); // default mtd_visits
     });
@@ -62,7 +61,7 @@ const BDRankingLeaderboard = ({ managerId = null, onSelectCandidate }) => {
             BD Performance, Sales &amp; Revenue Leaderboard
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
-            Matched FTD (Today), MTD (Month), and LTD (Lifetime) Sales &amp; Revenue across {salespersons.length} field agents
+            Matched FTD (Today) and MTD (Month) Sales &amp; Revenue across {salespersons.length} field agents
           </div>
         </div>
 
@@ -71,7 +70,6 @@ const BDRankingLeaderboard = ({ managerId = null, onSelectCandidate }) => {
           {[
             { id: 'mtd_sales', label: 'MTD Sales & Revenue', icon: Briefcase },
             { id: 'ftd_sales', label: 'FTD Sales (Today)', icon: Zap },
-            { id: 'ltd_sales', label: 'LTD Sales (Lifetime)', icon: TrendingUp },
             { id: 'mtd_visits', label: 'MTD Visits', icon: Flame },
             { id: 'attendance', label: 'Attendance %', icon: Calendar },
           ].map(tab => {
@@ -111,7 +109,6 @@ const BDRankingLeaderboard = ({ managerId = null, onSelectCandidate }) => {
               <th style={{ textAlign: 'center' }}>Day Start</th>
               <th style={{ textAlign: 'center' }}>FTD Sales &amp; Onboarding Payment</th>
               <th style={{ textAlign: 'center' }}>MTD Sales &amp; Onboarding Payment</th>
-              <th style={{ textAlign: 'center' }}>LTD Sales &amp; Onboarding Payment</th>
               <th style={{ textAlign: 'center' }}>MTD Visits</th>
               <th style={{ textAlign: 'center' }}>MTD Att %</th>
               <th style={{ textAlign: 'center' }}>AI Risk</th>
@@ -184,16 +181,6 @@ const BDRankingLeaderboard = ({ managerId = null, onSelectCandidate }) => {
                     </div>
                     <div style={{ fontSize: 10.5, color: '#2563eb', fontWeight: 700 }}>
                       {fmtCurr(sp.mtd_revenue)}
-                    </div>
-                  </td>
-
-                  {/* LTD Sales & Revenue (Lifetime) */}
-                  <td style={{ textAlign: 'center' }}>
-                    <div style={{ fontWeight: 800, color: '#7c3aed' }}>
-                      {sp.ltd_sales || 0} Sales
-                    </div>
-                    <div style={{ fontSize: 10.5, color: '#7c3aed', fontWeight: 700 }}>
-                      {fmtCurr(sp.ltd_revenue)}
                     </div>
                   </td>
 

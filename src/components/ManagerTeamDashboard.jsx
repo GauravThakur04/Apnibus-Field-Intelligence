@@ -313,7 +313,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, background: 'var(--bg-input)', padding: '8px 10px', borderRadius: 8 }}>
                   <div>FTD Sales: <strong style={{ color: (sp.ftd_sales ?? 0) > 0 ? '#10b981' : 'var(--text-faint)' }}>{sp.ftd_sales ?? 0}</strong></div>
                   <div>MTD Sales: <strong style={{ color: '#2563eb' }}>{sp.mtd_sales ?? 0}</strong></div>
-                  <div>LTD Sales: <strong style={{ color: '#7c3aed' }}>{sp.ltd_sales ?? 0}</strong></div>
+                  <div>MTD Visits: <strong style={{ color: '#7c3aed' }}>{sp.mtd_visits ?? 0}</strong></div>
                   <div>MTD Att: <strong style={{ color: '#0ea5e9' }}>{sp.mtd_attendance_pct ?? sp.attendance_rate ?? 85}%</strong></div>
                 </div>
 

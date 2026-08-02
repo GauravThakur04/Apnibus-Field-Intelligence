@@ -1,0 +1,2 @@
+/api-live/*  https://data.apnibus.com/:splat  200
+/*           /index.html                     200

@@ -275,7 +275,7 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
               <div className="card-subtitle">Filtered by {distTimeframe}</div>
             </div>
             <div style={{ display: 'flex', gap: 4, background: 'var(--bg-input)', padding: 3, borderRadius: 8 }}>
-              {['FTD', 'MTD', 'LTD'].map(tf => (
+              {['FTD', 'MTD'].map(tf => (
                 <button key={tf} onClick={() => setDistTimeframe(tf)} style={{
                   padding: '3px 8px', fontSize: 10, fontWeight: 700, borderRadius: 6, cursor: 'pointer', border: 'none',
                   background: distTimeframe === tf ? 'var(--primary)' : 'transparent',
@@ -309,7 +309,7 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
               <div className="card-subtitle">Peak window ({distTimeframe})</div>
             </div>
             <div style={{ display: 'flex', gap: 4, background: 'var(--bg-input)', padding: 3, borderRadius: 8 }}>
-              {['FTD', 'MTD', 'LTD'].map(tf => (
+              {['FTD', 'MTD'].map(tf => (
                 <button key={tf} onClick={() => setDistTimeframe(tf)} style={{
                   padding: '3px 8px', fontSize: 10, fontWeight: 700, borderRadius: 6, cursor: 'pointer', border: 'none',
                   background: distTimeframe === tf ? 'var(--primary)' : 'transparent',

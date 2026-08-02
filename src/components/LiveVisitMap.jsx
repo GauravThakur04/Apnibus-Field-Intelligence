@@ -39,6 +39,7 @@ const LiveVisitMap = ({ globalFilters, onSelectCandidate, theme }) => {
   const [managerEmail, setManagerEmail] = useState(lockedEmail);
   const [bdName, setBdName] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [markerCount, setMarkerCount] = useState(0);
 
   // Sync state if globalFilters change
@@ -48,21 +49,33 @@ const LiveVisitMap = ({ globalFilters, onSelectCandidate, theme }) => {
 
   const activeEmail = lockedEmail || managerEmail;
 
+  const activeBDNames = useMemo(() => new Set(allData.salespersons.map(s => s.name.toLowerCase().trim())), [allData.salespersons]);
+
   const bdList = useMemo(() => {
-    let visits = allData.visits;
+    let visits = allData.visits.filter(x => activeBDNames.has((x.bd_name || '').toLowerCase().trim()));
     if (activeEmail) visits = visits.filter(v => v.manager_email === activeEmail);
     return Array.from(new Set(visits.map(v => v.bd_name))).sort();
-  }, [activeEmail, allData]);
+  }, [activeEmail, allData, activeBDNames]);
 
   const filteredVisits = useMemo(() => {
-    let v = allData.visits;
+    let v = allData.visits.filter(x => activeBDNames.has((x.bd_name || '').toLowerCase().trim()));
     if (activeEmail) v = v.filter(x => x.manager_email === activeEmail);
     if (bdName)       v = v.filter(x => (x.bd_name || '').toLowerCase() === (bdName || '').toLowerCase());
     if (statusFilter) v = v.filter(x => x.verify_status === statusFilter);
+    if (dateFilter)   v = v.filter(x => x.visit_date === dateFilter);
     // Keep only visits with valid coords
     v = v.filter(x => x.latitude && x.longitude && !isNaN(x.latitude) && !isNaN(x.longitude));
     return v.slice(0, 300); // cap for performance
-  }, [activeEmail, bdName, statusFilter, allData]);
+  }, [activeEmail, bdName, statusFilter, dateFilter, allData, activeBDNames]);
+
+  const totalVisitsCount = useMemo(() => {
+    let v = allData.visits.filter(x => activeBDNames.has((x.bd_name || '').toLowerCase().trim()));
+    if (activeEmail) v = v.filter(x => x.manager_email === activeEmail);
+    if (bdName)       v = v.filter(x => (x.bd_name || '').toLowerCase() === (bdName || '').toLowerCase());
+    if (statusFilter) v = v.filter(x => x.verify_status === statusFilter);
+    if (dateFilter)   v = v.filter(x => x.visit_date === dateFilter);
+    return v.length;
+  }, [activeEmail, bdName, statusFilter, dateFilter, allData, activeBDNames]);
 
   // Init map
   useEffect(() => {
@@ -155,12 +168,15 @@ const LiveVisitMap = ({ globalFilters, onSelectCandidate, theme }) => {
               )}
             </h2>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Showing <strong>{markerCount}</strong> geo-tagged visit locations
+              Showing <strong>{totalVisitsCount}</strong> visits{bdName ? ` for ${bdName}` : ''}{dateFilter ? ` on ${dateFilter}` : ''}
             </div>
           </div>
 
           {/* Filter Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {/* Date Filter */}
+            <input type="date" className="input" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ width: '130px', padding: '6px 10px', height: '34px', fontSize: '12px' }} />
+
             {/* Manager Filter (Hidden/Disabled if locked in Single Manager Portal Mode) */}
             {!lockedEmail ? (
               <select className="select" value={managerEmail} onChange={e => { setManagerEmail(e.target.value); setBdName(''); }}>
@@ -186,27 +202,13 @@ const LiveVisitMap = ({ globalFilters, onSelectCandidate, theme }) => {
               <option value="PENDING">Pending Only</option>
             </select>
 
-            {(bdName || statusFilter || (!lockedEmail && managerEmail)) && (
+            {(bdName || statusFilter || dateFilter || (!lockedEmail && managerEmail)) && (
               <button className="btn btn-ghost" style={{ padding: '6px 10px', fontSize: 12 }}
-                onClick={() => { if (!lockedEmail) setManagerEmail(''); setBdName(''); setStatusFilter(''); }}>
+                onClick={() => { if (!lockedEmail) setManagerEmail(''); setBdName(''); setStatusFilter(''); setDateFilter(''); }}>
                 <X size={14} /> Clear
               </button>
             )}
           </div>
-        </div>
-
-        {/* Legend pills with exact location counts */}
-        <div style={{ display: 'flex', gap: 16, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 11, flexWrap: 'wrap' }}>
-          {Object.entries(MANAGER_COLORS).map(([email, info]) => {
-            const mgrVisitsCount = allData.visits.filter(v => v.manager_email === email && (v.visit_date || '').startsWith('2026-07')).length;
-            return (
-              <div key={email} style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: lockedEmail && lockedEmail !== email ? 0.4 : 1, background: 'var(--bg-input)', padding: '4px 10px', borderRadius: 20 }}>
-                <div style={{ width: 9, height: 9, borderRadius: '50%', background: info.color }} />
-                <span style={{ fontWeight: 700, color: 'var(--text-heading)' }}>{info.name}</span>
-                <span style={{ fontSize: 10, color: info.color, fontWeight: 800 }}>({mgrVisitsCount} visits)</span>
-              </div>
-            );
-          })}
         </div>
       </div>
 

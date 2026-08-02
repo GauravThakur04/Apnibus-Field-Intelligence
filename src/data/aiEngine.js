@@ -48,10 +48,7 @@ function filterVisitsByTimeframe(visits, timeframe = 'MTD') {
   if (timeframe === 'FTD') {
     return visits.filter(v => v.visit_date === '2026-07-31' || v.visit_date === '2026-07-30');
   }
-  if (timeframe === 'LTD') {
-    return visits;
-  }
-  // Default MTD (July 2026)
+  // Default MTD (July 2026) - LTD now defaults to MTD as requested
   return visits.filter(v => (v.visit_date || '').startsWith('2026-07'));
 }
 
@@ -273,7 +270,7 @@ export function getAINarrativeInsights(managerEmail = null) {
         category: 'ACTIVITY',
         confidence: 96,
         title: `⚡ July MTD Performance: ${visits.length} Total Field Visits Logged (${ftdVisitsCount} Active Today)`,
-        description: `Team maintains an active execution velocity with ${verRate}% average verification rate across 23 field candidates.`
+        description: `Team maintains an active execution velocity with ${verRate}% average verification rate across ${spList.length} field candidates.`
       },
       topSP && {
         id: 'topper',
