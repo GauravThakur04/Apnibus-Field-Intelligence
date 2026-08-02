@@ -49,6 +49,8 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const allData = getData() || { visits: [], salespersons: [], managers: [] };
   const [selectedBDName, setSelectedBDName] = useState(null);
   const [searchBD, setSearchBD] = useState('');
+  const [timeframe, setTimeframe] = useState('MTD'); // 'FTD' | 'MTD' | 'LTD' | 'CUSTOM'
+  const [customDate, setCustomDate] = useState('');
 
   const cfg = MANAGER_CONFIGS[managerEmail] || MANAGER_CONFIGS['rajnish.kumar@apnibus.com'] || DEFAULT_CONFIG;
 
@@ -65,31 +67,100 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
     return (allData?.salespersons || []).filter(s => s && s.manager_email === managerEmail);
   }, [managerEmail, allData]);
 
-  // Aggregate Revenue & Attendance for Team
-  const teamRevenue = useMemo(() => {
-    return mgrBDs.reduce((acc, s) => acc + (s.mtd_revenue || 0), 0);
+  // Helper dates derived dynamically
+  const systemTodayStr = useMemo(() => {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  }, []);
+  const DYNAMIC_TODAY_DATE = systemTodayStr;
+  const DYNAMIC_MTD_MONTH = useMemo(() => systemTodayStr.slice(0, 7), [systemTodayStr]);
+
+  // Aggregate all team orders dynamically from individual candidates
+  const teamOrders = useMemo(() => {
+    const orders = [];
+    mgrBDs.forEach(s => {
+      if (Array.isArray(s.punched_orders)) {
+        s.punched_orders.forEach(o => {
+          orders.push({ ...o, bd_name: s.name, bd_id: s.id });
+        });
+      }
+    });
+    return orders;
   }, [mgrBDs]);
 
-  const teamAvgAttendance = useMemo(() => {
-    if (!mgrBDs.length) return 85;
-    return Math.round(mgrBDs.reduce((acc, s) => acc + (s.attendance_rate || 85), 0) / mgrBDs.length);
-  }, [mgrBDs]);
+  // Filter orders according to active timeframe / custom date
+  const filteredOrders = useMemo(() => {
+    if (customDate) {
+      return teamOrders.filter(o => o.date === customDate);
+    }
+    if (timeframe === 'FTD') {
+      return teamOrders.filter(o => o.date === DYNAMIC_TODAY_DATE);
+    }
+    if (timeframe === 'MTD') {
+      return teamOrders.filter(o => o.date && o.date.startsWith(DYNAMIC_MTD_MONTH));
+    }
+    return teamOrders; // LTD
+  }, [teamOrders, timeframe, customDate, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH]);
+
+  // Filter visits according to active timeframe / custom date
+  const filteredVisits = useMemo(() => {
+    if (customDate) {
+      return mgrVisits.filter(v => v.visit_date === customDate);
+    }
+    if (timeframe === 'FTD') {
+      return mgrVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE);
+    }
+    if (timeframe === 'MTD') {
+      return mgrVisits.filter(v => v.visit_date && v.visit_date.startsWith(DYNAMIC_MTD_MONTH));
+    }
+    return mgrVisits; // LTD
+  }, [mgrVisits, timeframe, customDate, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH]);
+
+  // Dynamic KPI Metrics
+  const teamRevenue = useMemo(() => {
+    return filteredOrders.reduce((sum, o) => sum + (o.payable_amount || o.wallet_amount || 0), 0);
+  }, [filteredOrders]);
 
   const teamSalePunches = useMemo(() => {
-    return mgrBDs.reduce((acc, s) => acc + (s.sale_punches || 0), 0);
-  }, [mgrBDs]);
+    return filteredOrders.reduce((sum, o) => sum + (o.num_items || 1), 0);
+  }, [filteredOrders]);
 
-  const teamServicePunches = useMemo(() => {
-    return mgrBDs.reduce((acc, s) => acc + (s.service_punches || 0), 0);
-  }, [mgrBDs]);
+  const teamServicePunches = 0; // Cumulative order records are all sales punches
+
+  const teamAvgAttendance = useMemo(() => {
+    if (customDate || timeframe === 'FTD') {
+      const targetDate = customDate || DYNAMIC_TODAY_DATE;
+      const presentCount = mgrBDs.filter(s => {
+        const hasVisits = mgrVisits.some(v => v.visit_date === targetDate && (v.bd_name || '').toLowerCase().trim() === s.name.toLowerCase().trim());
+        const hasOrders = teamOrders.some(o => o.date === targetDate && (o.bd_name || '').toLowerCase().trim() === s.name.toLowerCase().trim());
+        return hasVisits || hasOrders;
+      }).length;
+      if (!mgrBDs.length) return 0;
+      return Math.round((presentCount / mgrBDs.length) * 100);
+    }
+    if (!mgrBDs.length) return 85;
+    return Math.round(mgrBDs.reduce((acc, s) => acc + (s.attendance_rate || 85), 0) / mgrBDs.length);
+  }, [mgrBDs, mgrVisits, teamOrders, timeframe, customDate, DYNAMIC_TODAY_DATE]);
+
+  const activeBdsCount = useMemo(() => {
+    const activeNames = new Set();
+    filteredVisits.forEach(v => {
+      if (v.bd_name) activeNames.add(v.bd_name.toLowerCase().trim());
+    });
+    filteredOrders.forEach(o => {
+      if (o.bd_name) activeNames.add(o.bd_name.toLowerCase().trim());
+    });
+    return activeNames.size;
+  }, [filteredVisits, filteredOrders]);
 
   const stats = useMemo(() => {
     const mgrObj = (allData?.managers || []).find(m => m && m.email === managerEmail);
-    return getStats({ managerId: mgrObj?.id }) || {
-      todayVisits: 0, mtdVisits: 0, verifiedVisits: 0, pendingVisits: 0,
-      activeToday: 0, coverageCities: 0, verificationRate: 0
+    const rawStats = getStats({ managerId: mgrObj?.id }) || {};
+    return {
+      ...rawStats,
+      todayVisits: filteredVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE).length,
+      activeToday: activeBdsCount
     };
-  }, [managerEmail, allData]);
+  }, [managerEmail, allData, filteredVisits, DYNAMIC_TODAY_DATE, activeBdsCount]);
 
   const trend = useMemo(() => {
     const mgrObj = (allData?.managers || []).find(m => m && m.email === managerEmail);
@@ -123,22 +194,33 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
     return Array.isArray(res) ? res : [];
   }, [managerEmail]);
 
-  // Combine BD info with risk scores
+  // Combine BD info with risk scores & dynamic active metrics
   const enrichedBDs = useMemo(() => {
     let list = mgrBDs.map(sp => {
       const risk = riskScores.find(r => r && r.bd_name && sp.name && r.bd_name.toLowerCase() === sp.name.toLowerCase());
       const isManager = sp.role === 'Head - Centre';
+      
+      const bdOrders = filteredOrders.filter(o => o.bd_id === sp.id || (o.bd_name && sp.name && o.bd_name.toLowerCase().trim() === sp.name.toLowerCase().trim()));
+      const activeRevenue = bdOrders.reduce((sum, o) => sum + (o.payable_amount || o.wallet_amount || 0), 0);
+      const activeSales = bdOrders.reduce((sum, o) => sum + (o.num_items || 1), 0);
+
+      const bdVisits = filteredVisits.filter(v => (v.bd_name || '').toLowerCase().trim() === sp.name.toLowerCase().trim());
+      const activeVisits = bdVisits.length;
+
       return {
         ...sp,
         is_manager: isManager,
         risk_score: risk?.risk_score ?? 15,
         risk_level: risk?.risk_level ?? 'LOW',
-        flags: Array.isArray(risk?.flags) ? risk.flags : []
+        flags: Array.isArray(risk?.flags) ? risk.flags : [],
+        activeRevenue,
+        activeSales,
+        activeVisits
       };
     }).sort((a, b) => {
       if (a.is_manager && !b.is_manager) return -1;
       if (!a.is_manager && b.is_manager) return 1;
-      return (b.mtd_revenue || 0) - (a.mtd_revenue || 0);
+      return (b.activeRevenue || 0) - (a.activeRevenue || 0);
     });
 
     if (searchBD.trim()) {
@@ -245,15 +327,116 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
         </div>
       </div>
 
+      {/* Dynamic Timeframe & Date Filter Switcher Bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'var(--bg-card)', padding: '14px 20px', borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)', flexWrap: 'wrap', gap: 14
+      }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-heading)', fontFamily: 'var(--font-header)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Activity size={16} color={cfg.color} />
+            Team Metrics Summary
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
+            {customDate ? `Showing metrics for selected date: ${customDate}` : `Showing metrics for timeframe: ${timeframe === 'FTD' ? 'Today (FTD)' : timeframe === 'MTD' ? 'Month (MTD)' : 'All-Time (LTD)'}`}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {/* Custom Date Input */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>Date Filter:</span>
+            <input
+              type="date"
+              className="input"
+              value={customDate}
+              onChange={e => {
+                setCustomDate(e.target.value);
+                setTimeframe('CUSTOM');
+              }}
+              style={{ width: 140, height: 32, padding: '4px 8px', fontSize: 12 }}
+            />
+            {customDate && (
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  setCustomDate('');
+                  setTimeframe('MTD');
+                }}
+                style={{ padding: '0 8px', height: 32, fontSize: 11, minWidth: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+
+          {/* FTD / MTD / LTD Toggle Pills */}
+          <div style={{ display: 'flex', gap: 4, background: 'var(--bg-input)', padding: 3, borderRadius: 8 }}>
+            {[
+              { id: 'FTD', label: 'FTD (Today)' },
+              { id: 'MTD', label: 'MTD (Month)' },
+              { id: 'LTD', label: 'LTD (All-Time)' }
+            ].map(pill => {
+              const isActive = timeframe === pill.id && !customDate;
+              return (
+                <button
+                  key={pill.id}
+                  onClick={() => {
+                    setCustomDate('');
+                    setTimeframe(pill.id);
+                  }}
+                  style={{
+                    padding: '5px 12px', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                    cursor: 'pointer', transition: 'var(--transition)',
+                    background: isActive ? 'var(--bg-card)' : 'transparent',
+                    color: isActive ? cfg.color : 'var(--text-muted)',
+                    boxShadow: isActive ? 'var(--shadow-sm)' : 'none'
+                  }}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Team KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14 }}>
         {[
-          { label: 'Team Revenue Generated', val: `₹ ${(teamRevenue / 100000).toFixed(1)} L`, icon: DollarSign, color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
-          { label: 'Sales Punches', val: `${teamSalePunches.toLocaleString()}`, icon: Briefcase, color: '#2563eb', bg: 'rgba(37,99,235,0.08)' },
-          { label: 'Service Punches', val: `${teamServicePunches.toLocaleString()}`, icon: Zap, color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
-          { label: 'Avg Attendance', val: `${teamAvgAttendance}%`, icon: UserCheck, color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)' },
-          { label: 'MTD Visits', val: (stats.mtdVisits || 0).toLocaleString(), icon: Activity, color: cfg.color, bg: cfg.light },
-          { label: 'Active Today BDs', val: `${stats.activeToday || 0} / ${mgrBDs.length}`, icon: Users, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+          { 
+            label: customDate ? 'Revenue (Date)' : timeframe === 'FTD' ? 'Revenue (Today)' : timeframe === 'LTD' ? 'Revenue (LTD)' : 'Revenue (MTD)', 
+            val: teamRevenue >= 100000 ? `₹ ${(teamRevenue / 100000).toFixed(1)} L` : `₹ ${(teamRevenue / 1000).toFixed(1)}k`, 
+            icon: DollarSign, color: '#10b981', bg: 'rgba(16,185,129,0.08)' 
+          },
+          { 
+            label: customDate ? 'Sales Punches (Date)' : timeframe === 'FTD' ? 'Sales Punches (Today)' : timeframe === 'LTD' ? 'Sales Punches (LTD)' : 'Sales Punches (MTD)', 
+            val: `${teamSalePunches.toLocaleString()}`, 
+            icon: Briefcase, color: '#2563eb', bg: 'rgba(37,99,235,0.08)' 
+          },
+          { 
+            label: customDate ? 'Service Punches (Date)' : timeframe === 'FTD' ? 'Service Punches (Today)' : timeframe === 'LTD' ? 'Service Punches (LTD)' : 'Service Punches (MTD)', 
+            val: `${teamServicePunches.toLocaleString()}`, 
+            icon: Zap, color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' 
+          },
+          { 
+            label: customDate || timeframe === 'FTD' ? 'Attendance (Day)' : timeframe === 'LTD' ? 'Avg Attendance (LTD)' : 'Avg Attendance (MTD)', 
+            val: `${teamAvgAttendance}%`, 
+            icon: UserCheck, color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)' 
+          },
+          { 
+            label: customDate ? 'Visits (Date)' : timeframe === 'FTD' ? "Today's Visits" : timeframe === 'LTD' ? 'Visits (LTD)' : 'Visits (MTD)', 
+            val: teamVisitsCount.toLocaleString(), 
+            icon: Activity, color: cfg.color, bg: cfg.light 
+          },
+          { 
+            label: customDate ? 'Active BDs (Date)' : timeframe === 'FTD' ? 'Active Today' : timeframe === 'LTD' ? 'Active BDs (LTD)' : 'Active BDs (MTD)', 
+            val: `${activeBdsCount} / ${mgrBDs.length}`, 
+            icon: Users, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' 
+          },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -320,7 +503,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                       {sp.name}
                     </div>
                     <div style={{ fontSize: 11, color: '#10b981', fontWeight: 800, marginTop: 1 }}>
-                      Onboarding Payment: {(sp.mtd_revenue || 0) >= 100000 ? `₹ ${((sp.mtd_revenue || 0) / 100000).toFixed(1)} L` : `₹ ${(((sp.mtd_revenue || 0) / 1000)).toFixed(1)}k`}
+                      {customDate ? 'Onboarding (Date)' : timeframe === 'FTD' ? 'Onboarding (Today)' : timeframe === 'LTD' ? 'Onboarding (LTD)' : 'Onboarding (MTD)'}: {sp.activeRevenue >= 100000 ? `₹ ${(sp.activeRevenue / 100000).toFixed(1)} L` : `₹ ${(sp.activeRevenue / 1000).toFixed(1)}k`}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 10, padding: '3px 8px', background: 'var(--bg-input)', borderRadius: 10, color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -339,10 +522,10 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, background: 'var(--bg-input)', padding: '8px 10px', borderRadius: 8 }}>
-                  <div>FTD Sales: <strong style={{ color: (sp.ftd_sales ?? 0) > 0 ? '#10b981' : 'var(--text-faint)' }}>{sp.ftd_sales ?? 0}</strong></div>
-                  <div>MTD Sales: <strong style={{ color: '#2563eb' }}>{sp.mtd_sales ?? 0}</strong></div>
-                  <div>MTD Visits: <strong style={{ color: '#7c3aed' }}>{sp.mtd_visits ?? 0}</strong></div>
-                  <div>MTD Att: <strong style={{ color: '#0ea5e9' }}>{sp.mtd_attendance_pct ?? sp.attendance_rate ?? 85}%</strong></div>
+                  <div>Active Sales: <strong style={{ color: '#10b981' }}>{sp.activeSales || 0}</strong></div>
+                  <div>Active Visits: <strong style={{ color: '#2563eb' }}>{sp.activeVisits || 0}</strong></div>
+                  <div>MTD Sales: <strong style={{ color: '#7c3aed' }}>{sp.mtd_sales || 0}</strong></div>
+                  <div>MTD Visits: <strong style={{ color: '#0ea5e9' }}>{sp.mtd_visits || 0}</strong></div>
                 </div>
 
                 <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12, padding: '7px' }}
