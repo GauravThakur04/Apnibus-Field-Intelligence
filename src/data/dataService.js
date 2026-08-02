@@ -422,6 +422,12 @@ const MASTER_CANDIDATES = [
   { id: 3, name: 'SUKHDEV SINGH', mobile: '9306703845', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Salesperson', state: 'Haryana', city: 'Sirsa', july_ach_pos_user: 4, july_ach_rev_user: 24100 },
   { id: 4, name: 'Shubham Singh', mobile: '7355982328', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Salesperson', state: 'Delhi-NCR', city: 'Gurugram', july_ach_pos_user: 4, july_ach_rev_user: 27000 },
   { id: 5, name: 'Mohit', mobile: '9053775782', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Salesperson', state: 'Haryana', city: 'Sirsa', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 30, name: 'Vishnu Prasad sahu', mobile: '9165702969', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Chhattisgarh', city: 'Korba', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 31, name: 'Sandip Kumar', mobile: '9341491268', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Jamui', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 32, name: 'Suraj Kumar dubey', mobile: '7634089611', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Gaya', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 33, name: 'Vicky Kumar', mobile: '7000679028', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Chhattisgarh', city: 'Bemetara', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 34, name: 'Abhishek Sahu', mobile: '7772952225', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Chhattisgarh', city: 'Durg', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 35, name: 'Manish kumar', mobile: '6200394914', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Gaya', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   
   { id: 6, name: 'Tarun Kumar', mobile: '8194815508', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Head - Centre', state: 'Haryana', city: 'Gurgaon', july_ach_pos_user: 2, july_ach_rev_user: 8500 },
   { id: 7, name: 'Akash Singh', mobile: '8447780900', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Uttar Pradesh', city: 'Gurugram', july_ach_pos_user: 24, july_ach_rev_user: 76200 },
@@ -491,7 +497,11 @@ const cityCoordinates = {
   'bareilly': [28.3670, 79.4304],
   'hanumangarh': [29.5800, 74.3200],
   'karauli': [26.4900, 77.0200],
-  'bharatpur': [27.2155, 77.4930]
+  'bharatpur': [27.2155, 77.4930],
+  'korba': [22.3500, 82.6800],
+  'jamui': [24.9200, 86.2200],
+  'bemetara': [21.9700, 81.5500],
+  'durg': [21.1900, 81.2800]
 };
 
 function localParseCSV(csvText) {
