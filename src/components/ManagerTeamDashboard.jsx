@@ -130,8 +130,8 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
     if (customDate || timeframe === 'FTD') {
       const targetDate = customDate || DYNAMIC_TODAY_DATE;
       const presentCount = mgrBDs.filter(s => {
-        const hasVisits = mgrVisits.some(v => v.visit_date === targetDate && (v.bd_name || '').toLowerCase().trim() === s.name.toLowerCase().trim());
-        const hasOrders = teamOrders.some(o => o.date === targetDate && (o.bd_name || '').toLowerCase().trim() === s.name.toLowerCase().trim());
+        const hasVisits = mgrVisits.some(v => v.visit_date === targetDate && String(v.bd_name || '').toLowerCase().trim() === String(s.name || '').toLowerCase().trim());
+        const hasOrders = teamOrders.some(o => o.date === targetDate && String(o.bd_name || '').toLowerCase().trim() === String(s.name || '').toLowerCase().trim());
         return hasVisits || hasOrders;
       }).length;
       if (!mgrBDs.length) return 0;
@@ -144,10 +144,12 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const activeBdsCount = useMemo(() => {
     const activeNames = new Set();
     filteredVisits.forEach(v => {
-      if (v.bd_name) activeNames.add(v.bd_name.toLowerCase().trim());
+      const name = String(v.bd_name || '').toLowerCase().trim();
+      if (name) activeNames.add(name);
     });
     filteredOrders.forEach(o => {
-      if (o.bd_name) activeNames.add(o.bd_name.toLowerCase().trim());
+      const name = String(o.bd_name || '').toLowerCase().trim();
+      if (name) activeNames.add(name);
     });
     return activeNames.size;
   }, [filteredVisits, filteredOrders]);
@@ -197,14 +199,14 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   // Combine BD info with risk scores & dynamic active metrics
   const enrichedBDs = useMemo(() => {
     let list = mgrBDs.map(sp => {
-      const risk = riskScores.find(r => r && r.bd_name && sp.name && r.bd_name.toLowerCase() === sp.name.toLowerCase());
+      const risk = riskScores.find(r => r && r.bd_name && sp.name && String(r.bd_name || '').toLowerCase().trim() === String(sp.name || '').toLowerCase().trim());
       const isManager = sp.role === 'Head - Centre';
       
-      const bdOrders = filteredOrders.filter(o => o.bd_id === sp.id || (o.bd_name && sp.name && o.bd_name.toLowerCase().trim() === sp.name.toLowerCase().trim()));
+      const bdOrders = filteredOrders.filter(o => o.bd_id === sp.id || (o.bd_name && sp.name && String(o.bd_name || '').toLowerCase().trim() === String(sp.name || '').toLowerCase().trim()));
       const activeRevenue = bdOrders.reduce((sum, o) => sum + (o.payable_amount || o.wallet_amount || 0), 0);
       const activeSales = bdOrders.reduce((sum, o) => sum + (o.num_items || 1), 0);
 
-      const bdVisits = filteredVisits.filter(v => (v.bd_name || '').toLowerCase().trim() === sp.name.toLowerCase().trim());
+      const bdVisits = filteredVisits.filter(v => String(v.bd_name || '').toLowerCase().trim() === String(sp.name || '').toLowerCase().trim());
       const activeVisits = bdVisits.length;
 
       return {
@@ -224,10 +226,10 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
     });
 
     if (searchBD.trim()) {
-      list = list.filter(b => b && b.name && b.name.toLowerCase().includes(searchBD.toLowerCase().trim()));
+      list = list.filter(b => b && b.name && String(b.name || '').toLowerCase().includes(String(searchBD || '').toLowerCase().trim()));
     }
     return list;
-  }, [mgrBDs, riskScores, searchBD]);
+  }, [mgrBDs, riskScores, searchBD, filteredOrders, filteredVisits]);
 
   // Bar Chart for BD Visits
   const bdBarOpts = useMemo(() => ({
