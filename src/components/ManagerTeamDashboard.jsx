@@ -484,7 +484,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
           {enrichedBDs.map(sp => {
             const riskColor = sp.risk_level === 'HIGH' ? '#f43f5e' : sp.risk_level === 'MEDIUM' ? '#f59e0b' : '#10b981';
-            const isManager = sp.role === 'Head - Centre';
+            const isManager = sp.role === 'Head - Centre' || sp.is_manager || sp.role === 'Manager' || sp.role === 'State Head';
             
             return (
               <div key={sp.id || sp.name} style={{
@@ -512,13 +512,17 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-heading)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {sp.name}
                     </div>
-                    <div style={{ fontSize: 11, color: '#10b981', fontWeight: 800, marginTop: 1 }}>
-                      {customDate ? 'Onboarding (Date)' : timeframe === 'FTD' ? 'Onboarding (Today)' : timeframe === 'LTD' ? 'Onboarding (LTD)' : 'Onboarding (MTD)'}: {sp.activeRevenue >= 100000 ? `₹ ${(sp.activeRevenue / 100000).toFixed(1)} L` : `₹ ${(sp.activeRevenue / 1000).toFixed(1)}k`}
-                    </div>
+                    {!isManager && (
+                      <div style={{ fontSize: 11, color: '#10b981', fontWeight: 800, marginTop: 1 }}>
+                        {customDate ? 'Onboarding (Date)' : timeframe === 'FTD' ? 'Onboarding (Today)' : timeframe === 'LTD' ? 'Onboarding (LTD)' : 'Onboarding (MTD)'}: {sp.activeRevenue >= 100000 ? `₹ ${(sp.activeRevenue / 100000).toFixed(1)} L` : `₹ ${(sp.activeRevenue / 1000).toFixed(1)}k`}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10, padding: '3px 8px', background: 'var(--bg-input)', borderRadius: 10, color: 'var(--text-muted)', fontWeight: 600 }}>
-                        ⏰ Day Start: {sp.start_day_time || '--:--'}
-                      </span>
+                      {!isManager && (
+                        <span style={{ fontSize: 10, padding: '3px 8px', background: 'var(--bg-input)', borderRadius: 10, color: 'var(--text-muted)', fontWeight: 600 }}>
+                          ⏰ Day Start: {sp.start_day_time || '--:--'}
+                        </span>
+                      )}
                       <span style={{
                         fontSize: 9, padding: '2px 6px',
                         background: isManager ? 'rgba(59, 130, 246, 0.15)' : 'rgba(100, 116, 139, 0.08)',
@@ -531,17 +535,25 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, background: 'var(--bg-input)', padding: '8px 10px', borderRadius: 8 }}>
-                  <div>Active Sales: <strong style={{ color: '#10b981' }}>{sp.activeSales || 0}</strong></div>
-                  <div>Active Visits: <strong style={{ color: '#2563eb' }}>{sp.activeVisits || 0}</strong></div>
-                  <div>MTD Sales: <strong style={{ color: '#7c3aed' }}>{sp.mtd_sales || 0}</strong></div>
-                  <div>MTD Visits: <strong style={{ color: '#0ea5e9' }}>{sp.mtd_visits || 0}</strong></div>
-                </div>
+                {isManager ? (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.45, padding: '10px 12px', background: isDark ? 'rgba(15, 23, 42, 0.3)' : '#f1f5f9', borderRadius: 8, fontStyle: 'italic' }}>
+                    Supervises daily regional field visits, performs live attendance checks, and reviews payment attribution.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, background: 'var(--bg-input)', padding: '8px 10px', borderRadius: 8 }}>
+                      <div>Active Sales: <strong style={{ color: '#10b981' }}>{sp.activeSales || 0}</strong></div>
+                      <div>Active Visits: <strong style={{ color: '#2563eb' }}>{sp.activeVisits || 0}</strong></div>
+                      <div>MTD Sales: <strong style={{ color: '#7c3aed' }}>{sp.mtd_sales || 0}</strong></div>
+                      <div>MTD Visits: <strong style={{ color: '#0ea5e9' }}>{sp.mtd_visits || 0}</strong></div>
+                    </div>
 
-                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12, padding: '7px' }}
-                  onClick={() => setSelectedBDName(sp.name)}>
-                  View Daily Timeline →
-                </button>
+                    <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12, padding: '7px' }}
+                      onClick={() => setSelectedBDName(sp.name)}>
+                      View Daily Timeline →
+                    </button>
+                  </>
+                )}
               </div>
             );
           })}
