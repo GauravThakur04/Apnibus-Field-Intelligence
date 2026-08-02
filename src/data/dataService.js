@@ -3,7 +3,7 @@ import rawData from './apnibusData.json';
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v2';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v3';
 let currentData = rawData;
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -418,10 +418,10 @@ const MANAGERS = [
 
 const MASTER_CANDIDATES = [
   { id: 1, name: 'Sonu Mishra', mobile: '8750710855', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Head - Centre', state: 'Haryana', city: 'Gurgaon', july_ach_pos_user: 25, july_ach_rev_user: 43200 },
-  { id: 2, name: 'Amit Rohilla', mobile: '9315883000', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'TL', state: 'Haryana', city: 'Gurugram', july_ach_pos_user: 25, july_ach_rev_user: 174000 },
-  { id: 3, name: 'SUKHDEV SINGH', mobile: '9306703845', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'BD', state: 'Haryana', city: 'Sirsa', july_ach_pos_user: 4, july_ach_rev_user: 24100 },
-  { id: 4, name: 'Shubham Singh', mobile: '7355982328', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'BD', state: 'Delhi-NCR', city: 'Gurugram', july_ach_pos_user: 4, july_ach_rev_user: 27000 },
-  { id: 5, name: 'Mohit', mobile: '9053775782', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'BD', state: 'Haryana', city: 'Sirsa', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 2, name: 'Amit Rohilla', mobile: '9315883000', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Salesperson', state: 'Haryana', city: 'Gurugram', july_ach_pos_user: 25, july_ach_rev_user: 174000 },
+  { id: 3, name: 'SUKHDEV SINGH', mobile: '9306703845', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Salesperson', state: 'Haryana', city: 'Sirsa', july_ach_pos_user: 4, july_ach_rev_user: 24100 },
+  { id: 4, name: 'Shubham Singh', mobile: '7355982328', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Salesperson', state: 'Delhi-NCR', city: 'Gurugram', july_ach_pos_user: 4, july_ach_rev_user: 27000 },
+  { id: 5, name: 'Mohit', mobile: '9053775782', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Salesperson', state: 'Haryana', city: 'Sirsa', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 30, name: 'Vishnu Prasad sahu', mobile: '9165702969', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Chhattisgarh', city: 'Korba', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 31, name: 'Sandip Kumar', mobile: '9341491268', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Jamui', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 32, name: 'Suraj Kumar dubey', mobile: '7634089611', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Gaya', july_ach_pos_user: 0, july_ach_rev_user: 0 },
@@ -430,14 +430,14 @@ const MASTER_CANDIDATES = [
   { id: 35, name: 'Manish kumar', mobile: '6200394914', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Gaya', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   
   { id: 6, name: 'Tarun Kumar', mobile: '8194815508', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Head - Centre', state: 'Haryana', city: 'Gurgaon', july_ach_pos_user: 2, july_ach_rev_user: 8500 },
-  { id: 7, name: 'Akash Singh', mobile: '8447780900', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Uttar Pradesh', city: 'Gurugram', july_ach_pos_user: 24, july_ach_rev_user: 76200 },
-  { id: 8, name: 'Syed Arshi Abrar', mobile: '9953226633', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Delhi-NCR', city: 'Noida', july_ach_pos_user: 2, july_ach_rev_user: 344 },
-  { id: 9, name: 'Chuna Ram', mobile: '9799862695', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 7, july_ach_rev_user: 8500 },
-  { id: 10, name: 'Arshdeep Singh', mobile: '8000304871', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 1, july_ach_rev_user: 4500 },
-  { id: 11, name: 'Harish Verma', mobile: '9805254456', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 3, july_ach_rev_user: 7500 },
-  { id: 12, name: 'Karan Raina', mobile: '9805472672', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 1, july_ach_rev_user: 2500 },
-  { id: 13, name: 'Shubham Dhiman', mobile: '7018778473', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 3, july_ach_rev_user: 8500 },
-  { id: 14, name: 'Vivek kumar kaundal', mobile: '9418606666', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'BD', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 7, name: 'Akash Singh', mobile: '8447780900', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Uttar Pradesh', city: 'Gurugram', july_ach_pos_user: 24, july_ach_rev_user: 76200 },
+  { id: 8, name: 'Syed Arshi Abrar', mobile: '9953226633', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Delhi-NCR', city: 'Noida', july_ach_pos_user: 2, july_ach_rev_user: 344 },
+  { id: 9, name: 'Chuna Ram', mobile: '9799862695', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 7, july_ach_rev_user: 8500 },
+  { id: 10, name: 'Arshdeep Singh', mobile: '8000304871', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 1, july_ach_rev_user: 4500 },
+  { id: 11, name: 'Harish Verma', mobile: '9805254456', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 3, july_ach_rev_user: 7500 },
+  { id: 12, name: 'Karan Raina', mobile: '9805472672', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 1, july_ach_rev_user: 2500 },
+  { id: 13, name: 'Shubham Dhiman', mobile: '7018778473', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 3, july_ach_rev_user: 8500 },
+  { id: 14, name: 'Vivek kumar kaundal', mobile: '9418606666', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 36, name: 'Neeraj Shrivastav', mobile: '8962568747', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Madhya Pradesh', city: 'Betul', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 37, name: 'Ajay Kumar', mobile: '8544793597', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Himachal Pradesh', city: 'Mandi', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 38, name: 'Vansh Sawant', mobile: '9816363034', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Himachal Pradesh', city: 'Solan', july_ach_pos_user: 0, july_ach_rev_user: 0 },
@@ -447,11 +447,11 @@ const MASTER_CANDIDATES = [
   { id: 42, name: 'Haris Khan', mobile: '9399588962', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Madhya Pradesh', city: 'Bhopal', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   
   { id: 19, name: 'Rajnish Kumar', mobile: '9341643122', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Head - Centre', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
-  { id: 20, name: 'Anand Kumar singh', mobile: '8709016324', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'BD', state: 'Jharkhand', city: 'Hazaribagh', july_ach_pos_user: 15, july_ach_rev_user: 13091 },
-  { id: 21, name: 'Manish Bhati', mobile: '7568612974', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'BD', state: 'Rajasthan', city: 'Bikaner', july_ach_pos_user: 8, july_ach_rev_user: 18800 },
-  { id: 22, name: 'Sarfaraj Khan', mobile: '8619414557', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'BD', state: 'Rajasthan', city: 'Jhalawar', july_ach_pos_user: 7, july_ach_rev_user: 13000 },
-  { id: 23, name: 'Shiv Dayal', mobile: '7891064831', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'BD', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 1, july_ach_rev_user: 99 },
-  { id: 24, name: 'Anil Kumar', mobile: '6350327751', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'BD', state: 'Rajasthan', city: 'Hanumangarh', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 20, name: 'Anand Kumar singh', mobile: '8709016324', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Jharkhand', city: 'Hazaribagh', july_ach_pos_user: 15, july_ach_rev_user: 13091 },
+  { id: 21, name: 'Manish Bhati', mobile: '7568612974', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Bikaner', july_ach_pos_user: 8, july_ach_rev_user: 18800 },
+  { id: 22, name: 'Sarfaraj Khan', mobile: '8619414557', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Jhalawar', july_ach_pos_user: 7, july_ach_rev_user: 13000 },
+  { id: 23, name: 'Shiv Dayal', mobile: '7891064831', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 1, july_ach_rev_user: 99 },
+  { id: 24, name: 'Anil Kumar', mobile: '6350327751', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Hanumangarh', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 25, name: 'Jeetu kumar prajapat', mobile: '8764189635', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Karauli', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 26, name: 'Mohammad Hussain', mobile: '9636972335', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Udaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 27, name: 'Yashodhan', mobile: '7733841658', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Bharatpur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
