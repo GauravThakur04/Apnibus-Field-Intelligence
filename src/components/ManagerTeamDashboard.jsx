@@ -33,14 +33,6 @@ const MANAGER_CONFIGS = {
     light: 'rgba(245,158,11,0.08)',
     grad: 'linear-gradient(135deg, #d97706 0%, #fbbf24 100%)',
     avatarBg: '#f59e0b'
-  },
-  'rajwinder.singh@apnibus.com': {
-    name: 'Rajwinder Singh',
-    title: 'Regional Manager — Punjab Region',
-    color: '#8b5cf6',
-    light: 'rgba(139,92,246,0.08)',
-    grad: 'linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%)',
-    avatarBg: '#8b5cf6'
   }
 };
 

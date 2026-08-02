@@ -8,8 +8,7 @@ import { Filter, Navigation, X, Lock } from 'lucide-react';
 const MANAGER_COLORS = {
   'rajnish.kumar@apnibus.com':   { color: '#2563eb', name: 'Rajnish Kumar'   },
   'tarun.kumar@apnibus.com':     { color: '#10b981', name: 'Tarun Kumar'     },
-  'sonu.mishra@apnibus.com':     { color: '#f59e0b', name: 'Sonu Mishra'     },
-  'rajwinder.singh@apnibus.com': { color: '#8b5cf6', name: 'Rajwinder Singh'  }
+  'sonu.mishra@apnibus.com':     { color: '#f59e0b', name: 'Sonu Mishra'     }
 };
 
 const createSvgIcon = (color, verified) => {

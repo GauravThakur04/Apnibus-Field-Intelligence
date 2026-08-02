@@ -3,7 +3,6 @@ import rawData from './apnibusData.json';
 const MANAGERS = [
   { id: 552, name: 'Sonu Mishra', email: 'sonu.mishra@apnibus.com', role: 'Head - Centre', state: 'BH', city: 'Gurgaon' },
   { id: 553, name: 'Tarun Kumar', email: 'tarun.kumar@apnibus.com', role: 'Head - Centre', state: 'HP', city: 'Gurgaon' },
-  { id: 554, name: 'Rajwinder Singh', email: 'rajwinder.singh@apnibus.com', role: 'Head - Centre', state: 'PB', city: 'Punjab' },
   { id: 201, name: 'Rajnish Kumar', email: 'rajnish.kumar@apnibus.com', role: 'Head - Centre', state: 'RJ', city: 'Jaipur' }
 ];
 
@@ -36,12 +35,7 @@ const MASTER_CANDIDATES = [
   { id: 40, name: 'Gaurav Chauhan', mobile: '7807784847', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Himachal Pradesh', city: 'Shimla', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 41, name: 'Devesh pandey', mobile: '9193115885', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Uttar Pradesh', city: 'Agra', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 42, name: 'Haris Khan', mobile: '9399588962', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Madhya Pradesh', city: 'Bhopal', july_ach_pos_user: 0, july_ach_rev_user: 0 },
-  
-  { id: 15, name: 'Rajwinder Singh', mobile: '9876543210', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Head - Centre', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 0, july_ach_rev_user: 0 },
-  { id: 16, name: 'Rajiv Kumar', mobile: '9814201669', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Salesperson', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 13, july_ach_rev_user: 37500 },
-  { id: 17, name: 'Surinder Singh', mobile: '9877674046', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Salesperson', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 6, july_ach_rev_user: 17000 },
-  { id: 18, name: 'Rajat Sharma', mobile: '7888436876', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Salesperson', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 14, july_ach_rev_user: 28502 },
-  
+
   { id: 19, name: 'Rajnish Kumar', mobile: '9341643122', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Head - Centre', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 20, name: 'Anand Kumar singh', mobile: '8709016324', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Jharkhand', city: 'Hazaribagh', july_ach_pos_user: 15, july_ach_rev_user: 13091 },
   { id: 21, name: 'Manish Bhati', mobile: '7568612974', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Bikaner', july_ach_pos_user: 8, july_ach_rev_user: 18800 },
@@ -111,7 +105,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v4';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v5';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');

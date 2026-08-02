@@ -10,7 +10,6 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
     { id: 'mgr_rajnish',   label: 'Rajnish Kumar',   subtitle: 'Rajasthan & Jharkhand', param: 'rajnish',   color: '#2563eb' },
     { id: 'mgr_tarun',     label: 'Tarun Kumar',     subtitle: 'Himachal & North',      param: 'tarun',     color: '#10b981' },
     { id: 'mgr_sonu',      label: 'Sonu Mishra',      subtitle: 'Haryana & NCR',         param: 'sonu',      color: '#f59e0b' },
-    { id: 'mgr_rajwinder', label: 'Rajwinder Singh',  subtitle: 'Punjab Region',         param: 'rajwinder', color: '#8b5cf6' },
   ];
 
   const toolsNav = [
