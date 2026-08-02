@@ -1,10 +1,10 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, UserCheck, Map, Table2,
-  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft
+  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft, X
 } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, currentManagerParam }) => {
+const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, currentManagerParam, sidebarOpen, setSidebarOpen }) => {
 
   const managerNav = [
     { id: 'mgr_rajnish',   label: 'Rajnish Kumar',   subtitle: 'Rajasthan & Jharkhand', param: 'rajnish',   color: '#2563eb' },
@@ -25,7 +25,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
   const activeMgrObj = managerNav.find(m => m.param === currentManagerParam);
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
       {/* Brand Header */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon" style={{ background: 'transparent', boxShadow: 'none', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -44,6 +44,11 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
         <span className="sidebar-logo-badge" style={isManagerPortal && activeMgrObj ? { background: `${activeMgrObj.color}20`, color: activeMgrObj.color } : {}}>
           {isManagerPortal ? 'Manager' : 'Executive'}
         </span>
+        
+        {/* Mobile Sidebar Close Button */}
+        <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)}>
+          <X size={16} />
+        </button>
       </div>
 
       {/* Scrollable Nav Area */}

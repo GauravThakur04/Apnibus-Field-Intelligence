@@ -11,7 +11,7 @@ import DataConfigModal from './components/DataConfigModal';
 import RedAlertDashboard from './components/RedAlertDashboard';
 import ManagerTeamDashboard from './components/ManagerTeamDashboard';
 import IndividualBDDashboard from './components/IndividualBDDashboard';
-
+import { Menu, Sun, Moon } from 'lucide-react';
 import { getData, fetchLiveData } from './data/dataService';
 
 const MGR_EMAIL_MAP = {
@@ -172,8 +172,34 @@ const App = () => {
     }
   };
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Auto-close mobile sidebar when switching tabs
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [activeTab]);
+
   return (
-    <div className="app-container">
+    <div className={`app-container ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      {/* Mobile Top Header Bar */}
+      <header className="mobile-header">
+        <button className="mobile-header-btn" onClick={() => setSidebarOpen(true)}>
+          <Menu size={20} />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img src="/logo.png" alt="ApniBus Logo" style={{ height: 26, width: 'auto', objectFit: 'contain' }} />
+          <span style={{ fontFamily: 'var(--font-header)', fontWeight: 800, fontSize: 15, color: 'var(--text-heading)' }}>ApniBus</span>
+        </div>
+        <button className="mobile-header-btn" onClick={toggleTheme}>
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </header>
+
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {sidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
+
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -181,6 +207,8 @@ const App = () => {
         toggleTheme={toggleTheme}
         onOpenConfig={() => setIsConfigOpen(true)}
         currentManagerParam={currentMgrParam}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
       />
       <main className="main-content">
         {renderContent()}

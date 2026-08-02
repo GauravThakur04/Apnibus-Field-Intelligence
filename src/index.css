@@ -894,3 +894,156 @@ h1,h2,h3,h4,h5,h6 {
   color: var(--text-muted);
 }
 .page-btns { display: flex; gap: 6px; }
+
+/* ============================================================
+   RESPONSIVE DESIGN (MOBILE & TABLET COMPATIBILITY)
+   ============================================================ */
+.mobile-header {
+  display: none;
+}
+.sidebar-close-btn {
+  display: none;
+}
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Layout changes */
+  .app-container {
+    flex-direction: column !important;
+    min-height: 100vh;
+  }
+
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    height: 56px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  .mobile-header-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-heading);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+  }
+  .mobile-header-btn:active {
+    background: var(--bg-input);
+  }
+
+  /* Sidebar transitions to overlay drawer */
+  .sidebar {
+    position: fixed !important;
+    left: -260px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+    z-index: 1000 !important;
+    height: 100vh !important;
+    box-shadow: var(--shadow-xl) !important;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  
+  .sidebar.mobile-open {
+    left: 0 !important;
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    margin-left: auto;
+    transition: var(--transition);
+  }
+  .sidebar-close-btn:hover {
+    color: var(--text-heading);
+    background: var(--bg-input);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+
+  .main-content {
+    padding: 16px !important;
+    margin-top: 56px !important;
+    height: calc(100vh - 56px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Stack layout grids to 1 column on mobile */
+  div[style*="grid-template-columns: repeat(5"],
+  div[style*="grid-template-columns: repeat(6"],
+  div[style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important; /* KPI cards grid: 2 cols on mobile instead of 4/5/6 */
+    gap: 10px !important;
+  }
+  div[style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: 1fr !important; /* Manager scorecard grid: stack completely to 1 column */
+  }
+  
+  /* Stack grid layouts to 1 column */
+  div[style*="grid-template-columns: 2fr"],
+  div[style*="grid-template-columns: 1.4fr"],
+  div[style*="grid-template-columns: 1.2fr"],
+  div[style*="grid-template-columns: 1fr 300px"],
+  div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fix flex wraps on control bars */
+  div[style*="display: flex"][style*="justify-content: space-between"],
+  div[style*="display: flex"][style*="justifyContent: space-between"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  /* Make map frame fully height responsive */
+  div[style*="height: calc(100vh - 100px)"] {
+    height: calc(100vh - 160px) !important;
+  }
+  
+  /* Make charts scale cleanly */
+  .apexcharts-canvas {
+    width: 100% !important;
+  }
+  
+  /* Adjust modal sizes on mobile */
+  .modal-content {
+    width: 95% !important;
+    max-width: 95% !important;
+    padding: 16px !important;
+  }
+}
