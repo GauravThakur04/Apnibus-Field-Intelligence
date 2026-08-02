@@ -3,7 +3,7 @@ import rawData from './apnibusData.json';
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-07-31-sales-owner-v1';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v2';
 let currentData = rawData;
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -776,6 +776,7 @@ export const fetchLiveData = async () => {
         user_id: c.mobile,
         status: 'Active',
         productivity_score: 90,
+        designation: c.role || 'BD',
         today_visits: todayVisitsList.length,
         mtd_visits: mtdVisitsList.length,
         ltd_visits: bdVisits.length,

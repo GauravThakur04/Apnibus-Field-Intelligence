@@ -326,7 +326,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                         color: isManager ? '#2563eb' : 'var(--text-muted)',
                         borderRadius: 6, fontWeight: 800, textTransform: 'uppercase'
                       }}>
-                        {sp.role || 'Salesperson'}
+                        {sp.role || sp.designation || 'BD'}
                       </span>
                     </div>
                   </div>
