@@ -285,12 +285,26 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
           {enrichedBDs.map(sp => {
             const riskColor = sp.risk_level === 'HIGH' ? '#f43f5e' : sp.risk_level === 'MEDIUM' ? '#f59e0b' : '#10b981';
+            const isManager = sp.role === 'Head - Centre';
+            
             return (
               <div key={sp.id || sp.name} style={{
-                padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--bg-card)',
-                border: '1px solid var(--border)', transition: 'var(--transition)',
+                padding: '16px', borderRadius: 'var(--radius-lg)', 
+                background: isManager ? (isDark ? 'rgba(30, 41, 59, 0.65)' : 'rgba(239, 246, 255, 0.95)') : 'var(--bg-card)',
+                border: isManager ? `2px solid ${cfg.color}` : '1px solid var(--border)', 
+                transition: 'var(--transition)',
                 display: 'flex', flexDirection: 'column', gap: 12, position: 'relative'
               }} className="card-hover">
+                {isManager && (
+                  <div style={{
+                    position: 'absolute', top: 12, right: 12,
+                    fontSize: '9px', fontWeight: 800, padding: '3px 8px',
+                    borderRadius: '20px', background: cfg.color, color: '#fff',
+                    textTransform: 'uppercase', letterSpacing: '0.05em'
+                  }}>
+                    Manager
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: cfg.light, color: cfg.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
                     {(sp.name || 'B')[0]}
@@ -302,9 +316,17 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                     <div style={{ fontSize: 11, color: '#10b981', fontWeight: 800, marginTop: 1 }}>
                       Onboarding Payment: {(sp.mtd_revenue || 0) >= 100000 ? `₹ ${((sp.mtd_revenue || 0) / 100000).toFixed(1)} L` : `₹ ${(((sp.mtd_revenue || 0) / 1000)).toFixed(1)}k`}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 10, padding: '3px 8px', background: 'var(--bg-input)', borderRadius: 10, color: 'var(--text-muted)', fontWeight: 600 }}>
                         ⏰ Day Start: {sp.start_day_time || '--:--'}
+                      </span>
+                      <span style={{
+                        fontSize: 9, padding: '2px 6px',
+                        background: isManager ? 'rgba(59, 130, 246, 0.15)' : 'rgba(100, 116, 139, 0.08)',
+                        color: isManager ? '#2563eb' : 'var(--text-muted)',
+                        borderRadius: 6, fontWeight: 800, textTransform: 'uppercase'
+                      }}>
+                        {sp.role || 'Salesperson'}
                       </span>
                     </div>
                   </div>
