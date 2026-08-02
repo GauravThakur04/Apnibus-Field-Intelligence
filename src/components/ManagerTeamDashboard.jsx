@@ -115,6 +115,8 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
     return mgrVisits; // LTD
   }, [mgrVisits, timeframe, customDate, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH]);
 
+  const teamVisitsCount = filteredVisits.length;
+
   // Dynamic KPI Metrics
   const teamRevenue = useMemo(() => {
     return filteredOrders.reduce((sum, o) => sum + (o.payable_amount || o.wallet_amount || 0), 0);
