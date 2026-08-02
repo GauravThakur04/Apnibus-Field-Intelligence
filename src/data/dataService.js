@@ -761,7 +761,13 @@ export const fetchLiveData = async () => {
         ltd_revenue: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
         sale_punches: mtdSales,
         punched_orders: punchedOrders,
-        start_day_time: MORNING_START_TIMES[nameLower] || '09:30 AM',
+        start_day_time: todayVisitsList.length > 0
+          ? (() => {
+              const sorted = [...todayVisitsList].sort((a, b) => getVisitTime(a) - getVisitTime(b));
+              const firstMin = getVisitTime(sorted[0]);
+              return fmtTime(Math.max(firstMin - 30, 8 * 60));
+            })()
+          : 'Not Started',
         onboarding_payment_ftd: ftdRevenue,
         onboarding_payment_mtd: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdRevenue > 0 ? mtdRevenue : c.july_ach_rev_user) : mtdRevenue,
         onboarding_payment_ltd: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
