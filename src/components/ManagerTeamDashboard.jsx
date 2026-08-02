@@ -127,13 +127,19 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const enrichedBDs = useMemo(() => {
     let list = mgrBDs.map(sp => {
       const risk = riskScores.find(r => r && r.bd_name && sp.name && r.bd_name.toLowerCase() === sp.name.toLowerCase());
+      const isManager = sp.role === 'Head - Centre';
       return {
         ...sp,
+        is_manager: isManager,
         risk_score: risk?.risk_score ?? 15,
         risk_level: risk?.risk_level ?? 'LOW',
         flags: Array.isArray(risk?.flags) ? risk.flags : []
       };
-    }).sort((a, b) => (b.mtd_revenue || 0) - (a.mtd_revenue || 0));
+    }).sort((a, b) => {
+      if (a.is_manager && !b.is_manager) return -1;
+      if (!a.is_manager && b.is_manager) return 1;
+      return (b.mtd_revenue || 0) - (a.mtd_revenue || 0);
+    });
 
     if (searchBD.trim()) {
       list = list.filter(b => b && b.name && b.name.toLowerCase().includes(searchBD.toLowerCase().trim()));
