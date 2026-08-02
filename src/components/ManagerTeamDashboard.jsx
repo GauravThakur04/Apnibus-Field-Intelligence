@@ -33,6 +33,14 @@ const MANAGER_CONFIGS = {
     light: 'rgba(245,158,11,0.08)',
     grad: 'linear-gradient(135deg, #d97706 0%, #fbbf24 100%)',
     avatarBg: '#f59e0b'
+  },
+  'rajwinder.singh@apnibus.com': {
+    name: 'Rajwinder Singh',
+    title: 'Regional Manager — Punjab Region',
+    color: '#8b5cf6',
+    light: 'rgba(139,92,246,0.08)',
+    grad: 'linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%)',
+    avatarBg: '#8b5cf6'
   }
 };
 
@@ -377,12 +385,11 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
 
           <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
 
-          {/* FTD / MTD / LTD Toggle Pills */}
+          {/* FTD / MTD Toggle Pills */}
           <div style={{ display: 'flex', gap: 4, background: 'var(--bg-input)', padding: 3, borderRadius: 8 }}>
             {[
               { id: 'FTD', label: 'FTD (Today)' },
-              { id: 'MTD', label: 'MTD (Month)' },
-              { id: 'LTD', label: 'LTD (All-Time)' }
+              { id: 'MTD', label: 'MTD (Month)' }
             ].map(pill => {
               const isActive = timeframe === pill.id && !customDate;
               return (
