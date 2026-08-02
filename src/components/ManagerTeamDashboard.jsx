@@ -542,10 +542,8 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                 ) : (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, background: 'var(--bg-input)', padding: '8px 10px', borderRadius: 8 }}>
-                      <div>Active Sales: <strong style={{ color: '#10b981' }}>{sp.activeSales || 0}</strong></div>
-                      <div>Active Visits: <strong style={{ color: '#2563eb' }}>{sp.activeVisits || 0}</strong></div>
+                      <div>FTD Sales: <strong style={{ color: '#10b981' }}>{sp.ftd_sales || 0}</strong></div>
                       <div>MTD Sales: <strong style={{ color: '#7c3aed' }}>{sp.mtd_sales || 0}</strong></div>
-                      <div>MTD Visits: <strong style={{ color: '#0ea5e9' }}>{sp.mtd_visits || 0}</strong></div>
                     </div>
 
                     <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12, padding: '7px' }}
