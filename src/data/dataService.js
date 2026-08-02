@@ -432,7 +432,13 @@ const MASTER_CANDIDATES = [
   { id: 20, name: 'Anand Kumar singh', mobile: '8709016324', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Jharkhand', city: 'Hazaribagh', july_ach_pos_user: 15, july_ach_rev_user: 13091 },
   { id: 21, name: 'Manish Bhati', mobile: '7568612974', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Bikaner', july_ach_pos_user: 8, july_ach_rev_user: 18800 },
   { id: 22, name: 'Sarfaraj Khan', mobile: '8619414557', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Jhalawar', july_ach_pos_user: 7, july_ach_rev_user: 13000 },
-  { id: 23, name: 'Shiv Dayal', mobile: '7891064831', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 1, july_ach_rev_user: 99 }
+  { id: 23, name: 'Shiv Dayal', mobile: '7891064831', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 1, july_ach_rev_user: 99 },
+  { id: 24, name: 'Anil Kumar', mobile: '6350327751', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'BD', state: 'Rajasthan', city: 'Hanumangarh', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 25, name: 'Jeetu kumar prajapat', mobile: '8764189635', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Karauli', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 26, name: 'Mohammad Hussain', mobile: '9636972335', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Udaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 27, name: 'Yashodhan', mobile: '7733841658', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Bharatpur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 28, name: 'Birendra kumar', mobile: '9263711047', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Jharkhand', city: 'Jamshedpur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 29, name: 'KULDEEP SINGH UDAWAT', mobile: '7852812254', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Udaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 }
 ];
 
 const cityCoordinates = {
@@ -479,7 +485,10 @@ const cityCoordinates = {
   'amb': [31.6791, 76.1158],
   'ambikapur': [23.1211, 83.1932],
   'haridwar': [29.9457, 78.1642],
-  'bareilly': [28.3670, 79.4304]
+  'bareilly': [28.3670, 79.4304],
+  'hanumangarh': [29.5800, 74.3200],
+  'karauli': [26.4900, 77.0200],
+  'bharatpur': [27.2155, 77.4930]
 };
 
 function localParseCSV(csvText) {
