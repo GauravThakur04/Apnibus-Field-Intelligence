@@ -413,7 +413,6 @@ export const getAvailableDates = () => {
 const MANAGERS = [
   { id: 552, name: 'Sonu Mishra', email: 'sonu.mishra@apnibus.com', role: 'Head - Centre', state: 'BH', city: 'Gurgaon' },
   { id: 553, name: 'Tarun Kumar', email: 'tarun.kumar@apnibus.com', role: 'Head - Centre', state: 'HP', city: 'Gurgaon' },
-  { id: 554, name: 'Rajwinder Singh', email: 'rajwinder.singh@apnibus.com', role: 'State Head', state: 'PB', city: 'Punjab' },
   { id: 201, name: 'Rajnish Kumar', email: 'rajnish.kumar@apnibus.com', role: 'Head - Centre', state: 'RJ', city: 'Jaipur' }
 ];
 
@@ -430,9 +429,6 @@ const MASTER_CANDIDATES = [
   { id: 12, name: 'Karan Raina', mobile: '9805472672', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 1, july_ach_rev_user: 2500 },
   { id: 13, name: 'Shubham Dhiman', mobile: '7018778473', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 3, july_ach_rev_user: 8500 },
   { id: 14, name: 'Vivek kumar kaundal', mobile: '9418606666', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Salesperson', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 0, july_ach_rev_user: 0 },
-  { id: 16, name: 'Rajiv Kumar', mobile: '9814201669', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Salesperson', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 13, july_ach_rev_user: 37500 },
-  { id: 17, name: 'Surinder Singh', mobile: '9877674046', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Salesperson', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 6, july_ach_rev_user: 17000 },
-  { id: 18, name: 'Rajat Sharma', mobile: '7888436876', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Salesperson', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 14, july_ach_rev_user: 28502 },
   { id: 20, name: 'Anand Kumar singh', mobile: '8709016324', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Jharkhand', city: 'Hazaribagh', july_ach_pos_user: 15, july_ach_rev_user: 13091 },
   { id: 21, name: 'Manish Bhati', mobile: '7568612974', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Bikaner', july_ach_pos_user: 8, july_ach_rev_user: 18800 },
   { id: 22, name: 'Sarfaraj Khan', mobile: '8619414557', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Salesperson', state: 'Rajasthan', city: 'Jhalawar', july_ach_pos_user: 7, july_ach_rev_user: 13000 },

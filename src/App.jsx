@@ -17,18 +17,17 @@ import { getData, fetchLiveData } from './data/dataService';
 const MGR_EMAIL_MAP = {
   201: 'rajnish.kumar@apnibus.com',
   553: 'tarun.kumar@apnibus.com',
-  366: 'sonu.mishra@apnibus.com',
-  554: 'rajwinder.singh@apnibus.com'
+  366: 'sonu.mishra@apnibus.com'
 };
 
 const App = () => {
-  // Parse manager URL query parameter or hash route (e.g. ?manager=rajnish or ?manager=tarun or ?manager=sonu or ?manager=rajwinder)
+  // Parse manager URL query parameter or hash route (e.g. ?manager=rajnish or ?manager=tarun or ?manager=sonu)
   const getManagerParam = () => {
     const params = new URLSearchParams(window.location.search);
     const mgrParam = params.get('manager')?.toLowerCase();
     const hash = window.location.hash.replace('#', '').toLowerCase();
     const target = mgrParam || hash;
-    if (['rajnish', 'tarun', 'sonu', 'rajwinder'].includes(target)) return target;
+    if (['rajnish', 'tarun', 'sonu'].includes(target)) return target;
     return null;
   };
 
@@ -38,7 +37,6 @@ const App = () => {
     if (param === 'rajnish')   return 'mgr_rajnish';
     if (param === 'tarun')     return 'mgr_tarun';
     if (param === 'sonu')      return 'mgr_sonu';
-    if (param === 'rajwinder') return 'mgr_rajwinder';
     return 'overview';
   };
 
@@ -56,7 +54,6 @@ const App = () => {
     if (mgrParam === 'rajnish')   return 201;
     if (mgrParam === 'tarun')     return 553;
     if (mgrParam === 'sonu')      return 366;
-    if (mgrParam === 'rajwinder') return 554;
     return null;
   }, [activeTab]);
 
@@ -128,9 +125,6 @@ const App = () => {
 
       case 'mgr_sonu':
         return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
-
-      case 'mgr_rajwinder':
-        return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
 
       case 'managers':
         return <ManagerPerformance />;
