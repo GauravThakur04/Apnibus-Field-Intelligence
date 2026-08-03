@@ -105,7 +105,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v10';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v11';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -678,6 +678,7 @@ export const fetchLiveData = async () => {
     const rawSonuVisits = localParseCSV(sonuVisitsRes).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' }));
     const rawTarunVisits = localParseCSV(tarunVisitsRes).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' }));
     const rawRajnishVisits = localParseCSV(rajnishVisitsRes).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' }));
+    const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits];
 
     const salesOrderRecords = rawSales.map(r => ({ ...r, _source: 'sales' }));
     const onboardingOrderRecords = rawOnboarding.map(r => ({ ...r, _source: 'onboarding' }));
