@@ -17,7 +17,7 @@ import { getData } from './data/dataService';
 const MGR_EMAIL_MAP = {
   201: 'rajnish.kumar@apnibus.com',
   553: 'tarun.kumar@apnibus.com',
-  366: 'sonu.mishra@apnibus.com',
+  552: 'sonu.mishra@apnibus.com',
   554: 'rajwinder.singh@apnibus.com'
 };
 
@@ -55,7 +55,7 @@ const App = () => {
     const mgrParam = getManagerParam() || (activeTab.startsWith('mgr_') ? activeTab.replace('mgr_', '') : null);
     if (mgrParam === 'rajnish')   return 201;
     if (mgrParam === 'tarun')     return 553;
-    if (mgrParam === 'sonu')      return 366;
+    if (mgrParam === 'sonu')      return 552;
     if (mgrParam === 'rajwinder') return 554;
     return null;
   }, [activeTab]);
