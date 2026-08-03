@@ -105,7 +105,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v5';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v6';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -621,7 +621,7 @@ function localParseCSV(csvText) {
 
 const fetchCSVText = async (url) => {
   // Always proxy via /api-live to bypass CORS in dev & prod (Vercel/Netlify rewrites)
-  const target = url.replace('https://data.apnibus.com', '/api-live');
+  const target = url.replace('https://data.apnibus.com', '/api-live') + `?_cb=${Date.now()}`;
   const res = await fetch(target);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${target}`);
   return await res.text();
