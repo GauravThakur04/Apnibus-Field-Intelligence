@@ -105,7 +105,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v9';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v10';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -760,6 +760,13 @@ export const fetchLiveData = async () => {
     const activeBDNames = new Set(MASTER_CANDIDATES.map(s => s.name.toLowerCase().trim()));
 
     const compiledVisits = allVisits
+      .map(v => {
+        let name = (v.bd_name || '').trim();
+        if (name.toLowerCase() === 'amit kumar') {
+          name = 'Amit Rohilla';
+        }
+        return { ...v, bd_name: name };
+      })
       .filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()))
       .map(v => {
         let city = 'Other';
