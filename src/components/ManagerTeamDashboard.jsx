@@ -67,19 +67,13 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
     return (allData?.salespersons || []).filter(s => s && s.manager_email === managerEmail);
   }, [managerEmail, allData]);
 
-  // Helper dates derived dynamically from database activity
+  // Helper dates derived dynamically from system calendar
   const systemTodayStr = useMemo(() => {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   }, []);
   
-  const DYNAMIC_TODAY_DATE = useMemo(() => {
-    const dates = mgrVisits.map(v => v.visit_date).filter(Boolean).sort();
-    return dates[dates.length - 1] || systemTodayStr;
-  }, [mgrVisits, systemTodayStr]);
-
-  const DYNAMIC_MTD_MONTH = useMemo(() => {
-    return DYNAMIC_TODAY_DATE.slice(0, 7);
-  }, [DYNAMIC_TODAY_DATE]);
+  const DYNAMIC_TODAY_DATE = systemTodayStr;
+  const DYNAMIC_MTD_MONTH = useMemo(() => systemTodayStr.slice(0, 7), [systemTodayStr]);
 
   // Aggregate all team orders dynamically from individual candidates
   const teamOrders = useMemo(() => {
