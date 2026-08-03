@@ -257,10 +257,14 @@ export const getStats = (filters = {}) => {
   const coverageCities = new Set(visits.map(v => (v.city || '').trim()).filter(c => c && c !== 'Other' && !c.match(/^[0-9A-Z]{4}\+[0-9A-Z]{3,4}$/))).size || 124;
   const totalDistance  = Math.round(mtdVisits * 4.2);
 
+  const totalMtdSales = salespersons.reduce((sum, s) => sum + (s.mtd_sales || 0), 0);
+  const totalMtdRevenue = salespersons.reduce((sum, s) => sum + (s.mtd_revenue || 0), 0);
+
   return {
     totalCandidates, totalManagers, todayVisits, mtdVisits, ltdVisits,
     verifiedVisits, pendingVisits, rejectedVisits, verificationRate,
-    activeToday, avgVisitsPerCandidate, coverageCities, totalDistance, latestDate
+    activeToday, avgVisitsPerCandidate, coverageCities, totalDistance, latestDate,
+    totalMtdSales, totalMtdRevenue
   };
 };
 
@@ -306,11 +310,16 @@ export const getManagerPerformance = () => {
     const dailyCounts = {};
     mVisits.filter(v => (v.visit_date || '').startsWith(currentMonth)).forEach(v => { dailyCounts[v.visit_date] = (dailyCounts[v.visit_date] || 0) + 1; });
     const last7 = Object.keys(dailyCounts).sort().slice(-7).map(d => dailyCounts[d]);
+    const mtdSales = mSP.reduce((sum, s) => sum + (s.mtd_sales || 0), 0);
+    const mtdRevenue = mSP.reduce((sum, s) => sum + (s.mtd_revenue || 0), 0);
+
     return {
       ...manager,
       candidates: mSP.length,
       today: mVisits.filter(v => v.visit_date === latest).length,
       mtd,
+      mtdSales,
+      mtdRevenue,
       ltd: mVisits.length,
       verifiedPercent: mtd > 0 ? Math.round((verified / mtd) * 100) : 85,
       sparkline: last7.length > 0 ? last7 : [10, 15, 8, 12, 16, 14, 20]

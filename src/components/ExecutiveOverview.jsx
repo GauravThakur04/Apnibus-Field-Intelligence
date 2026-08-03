@@ -202,13 +202,15 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
       </div>
 
       {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 14 }}>
         {[
           { label: 'Total BDs',          value: stats.totalCandidates,             icon: Users,         color: '#2563eb', bg: 'rgba(37,99,235,0.08)',  delay: 0.05 },
-          { label: 'Avg Attendance',      value: '86.4%',                           icon: UserCheck,     color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)', delay: 0.1,  delta: '9.4 hrs avg field time', deltaUp: true },
-          { label: 'MTD Visits',          value: stats.mtdVisits.toLocaleString(),  icon: Activity,      color: '#2563eb', bg: 'rgba(37,99,235,0.08)',  delay: 0.15 },
-          { label: 'Cities Covered',      value: stats.coverageCities,              icon: MapPin,        color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', delay: 0.2  },
-          { label: 'Active Today',        value: stats.activeToday,                 icon: Zap,           color: '#10b981', bg: 'rgba(16,185,129,0.08)', delay: 0.25 },
+          { label: 'MTD Sales Punches',  value: (stats.totalMtdSales || 0).toLocaleString(), icon: Briefcase, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', delay: 0.1 },
+          { label: 'MTD Revenue',        value: stats.totalMtdRevenue >= 100000 ? `₹ ${(stats.totalMtdRevenue / 100000).toFixed(1)} L` : `₹ ${(stats.totalMtdRevenue / 1000).toFixed(1)}k`, icon: DollarSign, color: '#10b981', bg: 'rgba(16,185,129,0.08)', delay: 0.15 },
+          { label: 'MTD Visits',          value: stats.mtdVisits.toLocaleString(),  icon: Activity,      color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)', delay: 0.2 },
+          { label: 'Cities Covered',      value: stats.coverageCities,              icon: MapPin,        color: '#7c3aed', bg: 'rgba(124,58,237,0.08)', delay: 0.25 },
+          { label: 'Active Today',        value: stats.activeToday,                 icon: Zap,           color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', delay: 0.3 },
+          { label: 'Avg Attendance',      value: '86.4%',                           icon: UserCheck,     color: '#64748b', bg: 'rgba(100,116,139,0.08)', delay: 0.35,  delta: '9.4 hrs avg field time', deltaUp: true },
         ].map((k, i) => (
           <KpiTile key={i} {...k} />
         ))}

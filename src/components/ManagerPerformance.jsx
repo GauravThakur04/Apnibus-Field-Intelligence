@@ -82,8 +82,10 @@ const ManagerPerformance = () => {
                   <th>#</th>
                   <th>Manager</th>
                   <th>Candidates</th>
-                  <th>Today</th>
-                  <th>MTD</th>
+                  <th>Today Visits</th>
+                  <th>MTD Visits</th>
+                  <th>MTD Sales</th>
+                  <th>MTD Revenue</th>
                   <th>Verified %</th>
                   <th>7-Day Trend</th>
                 </tr>
@@ -107,7 +109,11 @@ const ManagerPerformance = () => {
                     </td>
                     <td style={{ fontWeight: 600 }}>{m.candidates}</td>
                     <td>{m.today}</td>
-                    <td style={{ fontWeight: 700, color: colors[i % 3] }}>{m.mtd}</td>
+                    <td>{m.mtd}</td>
+                    <td style={{ fontWeight: 700, color: '#f59e0b' }}>{m.mtdSales || 0}</td>
+                    <td style={{ fontWeight: 700, color: '#10b981' }}>
+                      {m.mtdRevenue >= 100000 ? `₹ ${(m.mtdRevenue / 100000).toFixed(1)} L` : `₹ ${(m.mtdRevenue / 1000).toFixed(1)}k`}
+                    </td>
                     <td>
                       <span className={`badge ${m.verifiedPercent >= 50 ? 'badge-success' : 'badge-warning'}`}>
                         <span className="badge-dot" />
