@@ -913,5 +913,6 @@ export const fetchLiveData = async () => {
     console.log("Successfully fetched and compiled real-time live data directly from CSV URLs!");
   } catch (err) {
     console.error("Live fetch and compile failed, using cached values.", err);
+    throw err;
   }
 };

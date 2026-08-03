@@ -45,6 +45,7 @@ const App = () => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [dataVersion, setDataVersion] = useState(0);
   const [selectedCandidateName, setSelectedCandidateName] = useState('');
+  const [fetchError, setFetchError] = useState(null);
 
   const allData = useMemo(() => getData(), [dataVersion]);
 
@@ -87,6 +88,7 @@ const App = () => {
         handleDataChanged();
       } catch (err) {
         console.error("Mount live fetch failed:", err);
+        setFetchError(err.message || String(err));
       }
     };
     initLiveFetch();
@@ -211,6 +213,38 @@ const App = () => {
         setSidebarOpen={setSidebarOpen}
       />
       <main className="main-content">
+        {fetchError && (
+          <div style={{
+            background: 'var(--status-rejected-bg, #fee2e2)',
+            color: 'var(--status-rejected-text, #991b1b)',
+            padding: '12px 16px',
+            borderRadius: 8,
+            marginBottom: 16,
+            border: '1px solid #fca5a5',
+            fontFamily: 'sans-serif',
+            fontSize: 14,
+            fontWeight: 500,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span>⚠️ Live Data Fetch Error: {fetchError}</span>
+            <button 
+              onClick={() => setFetchError(null)} 
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: 16,
+                padding: '0 4px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
         {renderContent()}
       </main>
       <DataConfigModal
