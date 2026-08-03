@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, UserCheck, Map, Table2,
-  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft, X
+  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft, X, DollarSign
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, currentManagerParam, sidebarOpen, setSidebarOpen }) => {
@@ -17,6 +17,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
     { id: 'candidates', label: 'Candidate Profiles',  icon: UserCheck,     badge: null },
     { id: 'map',        label: 'Live Visit Map',      icon: Map,           badge: 'Live' },
     { id: 'table',      label: 'Visit Records',       icon: Table2,        badge: null },
+    { id: 'onboarding', label: 'Onboarding Payments', icon: DollarSign, badge: null },
     { id: 'insights',   label: 'Smart Insights',      icon: Lightbulb,     badge: 'AI' },
     { id: 'alerts',     label: 'Red Alerts',          icon: AlertTriangle, badge: '!', alert: true },
   ];

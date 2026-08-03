@@ -281,24 +281,6 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
     const mtdVisitsList = bdVisits.filter(v => (v.visit_date || '').startsWith(DYNAMIC_MTD_MONTH));
     const todayVisitsList = bdVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE);
 
-    const getVisitTime = (v) => {
-      if (!v.visit_date) return 9 * 60 + 30;
-      const t = (v.visit_date || '').split(' ');
-      if (t.length < 4) return 9 * 60 + 30;
-      const timeParts = t[3].split(':');
-      if (timeParts.length < 2) return 9 * 60 + 30;
-      const hrs = parseInt(timeParts[0], 10);
-      const mins = parseInt(timeParts[1], 10);
-      return hrs * 60 + mins;
-    };
-
-    const fmtTime = (minTotal) => {
-      const h = Math.floor(minTotal / 60);
-      const m = minTotal % 60;
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const displayH = h % 12 === 0 ? 12 : h % 12;
-      return `${String(displayH).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
-    };
 
     return {
       ...c,
@@ -318,11 +300,7 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
       sale_punches: mtdSales,
       punched_orders: punchedOrders,
       start_day_time: todayVisitsList.length > 0
-        ? (() => {
-            const sorted = [...todayVisitsList].sort((a, b) => getVisitTime(a) - getVisitTime(b));
-            const firstMin = getVisitTime(sorted[0]);
-            return fmtTime(Math.max(firstMin - 30, 8 * 60));
-          })()
+        ? `Active (${todayVisitsList.length} visit${todayVisitsList.length !== 1 ? 's' : ''})`
         : 'Not Started',
       onboarding_payment_ftd: ftdRevenue,
       onboarding_payment_mtd: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdRevenue > 0 ? mtdRevenue : c.july_ach_rev_user) : mtdRevenue,
@@ -413,7 +391,7 @@ export const getData = () => {
   if (currentData && currentData._lastDate && currentData._lastDate !== systemTodayStr && currentData._rawSales && currentData._rawOnboarding) {
     const DYNAMIC_TODAY_DATE = systemTodayStr;
     const DYNAMIC_MTD_MONTH = systemTodayStr.slice(0, 7);
-    const compiledSalespersons = compileSalespersons(
+    const { salespersons: compiledSPs, visits: compiledVisits } = compileSalespersons(
       currentData._rawSales,
       currentData._rawOnboarding,
       currentData.visits || [],
@@ -423,9 +401,10 @@ export const getData = () => {
     currentData = {
       ...currentData,
       _lastDate: systemTodayStr,
-      salespersons: compiledSalespersons,
+      salespersons: compiledSPs,
+      visits: compiledVisits,
       managers: MANAGERS.map(mgr => {
-        const team = compiledSalespersons.filter(s => s.manager_email === mgr.email);
+        const team = compiledSPs.filter(s => s.manager_email === mgr.email);
         return { ...mgr, bd_count: team.length };
       })
     };

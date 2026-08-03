@@ -26,6 +26,14 @@ const MANAGER_CONFIGS = {
     grad: 'linear-gradient(135deg, #059669 0%, #34d399 100%)',
     avatarBg: '#10b981'
   },
+  'rajwinder.singh@apnibus.com': {
+    name: 'Rajwinder Singh',
+    title: 'Regional Head — Punjab Region',
+    color: '#8b5cf6',
+    light: 'rgba(139,92,246,0.08)',
+    grad: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+    avatarBg: '#8b5cf6'
+  },
   'sonu.mishra@apnibus.com': {
     name: 'Sonu Mishra',
     title: 'Regional Manager — Haryana, Delhi-NCR & Central',
@@ -203,7 +211,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const enrichedBDs = useMemo(() => {
     let list = mgrBDs.map(sp => {
       const risk = riskScores.find(r => r && r.bd_name && sp.name && String(r.bd_name || '').toLowerCase().trim() === String(sp.name || '').toLowerCase().trim());
-      const isManager = sp.role === 'Head - Centre';
+      const isManager = sp.role === 'Regional Head';
       
       const bdOrders = filteredOrders.filter(o => o.bd_id === sp.id || (o.bd_name && sp.name && String(o.bd_name || '').toLowerCase().trim() === String(sp.name || '').toLowerCase().trim()));
       const activeRevenue = bdOrders.reduce((sum, o) => sum + (o.payable_amount || o.wallet_amount || 0), 0);
@@ -480,7 +488,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
           {enrichedBDs.map(sp => {
             const riskColor = sp.risk_level === 'HIGH' ? '#f43f5e' : sp.risk_level === 'MEDIUM' ? '#f59e0b' : '#10b981';
-            const isManager = sp.role === 'Head - Centre' || sp.is_manager || sp.role === 'Manager' || sp.role === 'State Head';
+            const isManager = sp.role === 'Regional Head';
             
             return (
               <div key={sp.id || sp.name} style={{
