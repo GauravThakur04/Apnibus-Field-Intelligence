@@ -103,7 +103,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v12';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v13';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
