@@ -105,7 +105,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v7';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v8';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -677,6 +677,12 @@ export const fetchLiveData = async () => {
       const status = String(record.payment_status || record.paymentStatus || '').toUpperCase();
       if (status === 'C') return false;
 
+      const recordName = localNormalizeText(record.rm_name || '');
+      const candidateName = localNormalizeText(candidate.name);
+      if (recordName && candidateName && recordName === candidateName) {
+        return true;
+      }
+
       const phone = String(record.bd_code || '').replace(/\D/g, '');
       const candidatePhone = String(candidate.mobile || '').replace(/\D/g, '');
       if (candidatePhone && phone) {
@@ -684,13 +690,8 @@ export const fetchLiveData = async () => {
         return false;
       }
 
-      const recordName = localNormalizeText(record.rm_name || '');
       if (!recordName) return false;
-
-      const candidateName = localNormalizeText(candidate.name);
       if (!candidateName) return false;
-
-      if (recordName === candidateName) return true;
       return aliases.includes(recordName);
     }
 
