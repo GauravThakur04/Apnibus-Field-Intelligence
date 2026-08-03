@@ -105,7 +105,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v6';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v7';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -623,13 +623,13 @@ const fetchCSVText = async (url) => {
 };
 
 export const fetchLiveData = async () => {
-  const onboardingUrl = 'https://data.apnibus.com/public/question/fe85fe32-ac30-499e-9c63-05804c72c4b6.csv';
-  const salesUrl = 'https://data.apnibus.com/public/question/e5e96873-7f54-45d1-b2f4-b2ead7d322fc.csv';
+  const onboardingUrl = 'https://data.apnibus.com/api/public/card/fe85fe32-ac30-499e-9c63-05804c72c4b6/query/csv';
+  const salesUrl = 'https://data.apnibus.com/api/public/card/e5e96873-7f54-45d1-b2f4-b2ead7d322fc/query/csv';
   
   const visitsUrls = {
-    'sonu.mishra@apnibus.com': 'https://data.apnibus.com/public/question/c8a0771c-ec40-43d5-b23b-30b1b1b2375a.csv',
-    'tarun.kumar@apnibus.com': 'https://data.apnibus.com/public/question/4d34c0fc-077c-44a6-b949-ebe9e36a1106.csv',
-    'rajnish.kumar@apnibus.com': 'https://data.apnibus.com/public/question/7420d1dc-f628-4628-b7cf-0abcbfe37b64.csv'
+    'sonu.mishra@apnibus.com': 'https://data.apnibus.com/api/public/card/c8a0771c-ec40-43d5-b23b-30b1b1b2375a/query/csv',
+    'tarun.kumar@apnibus.com': 'https://data.apnibus.com/api/public/card/4d34c0fc-077c-44a6-b949-ebe9e36a1106/query/csv',
+    'rajnish.kumar@apnibus.com': 'https://data.apnibus.com/api/public/card/7420d1dc-f628-4628-b7cf-0abcbfe37b64/query/csv'
   };
 
   try {
