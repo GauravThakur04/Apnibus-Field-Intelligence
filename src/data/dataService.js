@@ -138,7 +138,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v16';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v17';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -888,16 +888,26 @@ export const fetchLiveData = async () => {
       if (phone) aliases.add(phone);
       const aliasesArr = Array.from(aliases);
 
-      const salesSummary = sumOrdersLocal(orderRecords, c, aliasesArr);
+      const salesSummary = sumOrdersLocal(salesOrderRecords, c, aliasesArr);
+      const onboardingSummary = sumOrdersLocal(onboardingOrderRecords, c, aliasesArr);
 
       const ftdSales = salesSummary.ftdCount;
-      const ftdRevenue = salesSummary.ftdRevenue;
+      const ftdRevenue = onboardingSummary.ftdRevenue;
       const mtdSales = salesSummary.mtdCount;
-      const mtdRevenue = salesSummary.mtdRevenue;
+      const mtdRevenue = onboardingSummary.mtdRevenue;
       const ltdSales = salesSummary.ltdCount;
-      const ltdRevenue = salesSummary.ltdRevenue;
+      const ltdRevenue = onboardingSummary.ltdRevenue;
 
-      const punchedOrders = salesSummary.matched.map((record) => ({
+      // Union the matched orders for history list display
+      const unionMap = new Map();
+      salesSummary.matched.forEach(o => unionMap.set(o.order_id || `${o.created_on}|${o.payable_amount}`, o));
+      onboardingSummary.matched.forEach(o => {
+        const key = o.order_id || `${o.created_on}|${o.payable_amount}`;
+        if (!unionMap.has(key)) unionMap.set(key, o);
+      });
+      const unionMatched = Array.from(unionMap.values());
+
+      const punchedOrders = unionMatched.map((record) => ({
         order_id: record.order_id,
         date: formatToISODate(record.created_on || record.order_date || ''),
         time: (record.created_on || '').slice(11, 19),
