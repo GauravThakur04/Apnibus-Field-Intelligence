@@ -257,6 +257,8 @@ export const getStats = (filters = {}) => {
   const coverageCities = new Set(visits.map(v => (v.city || '').trim()).filter(c => c && c !== 'Other' && !c.match(/^[0-9A-Z]{4}\+[0-9A-Z]{3,4}$/))).size || 124;
   const totalDistance  = Math.round(mtdVisits * 4.2);
 
+  const totalFtdSales = salespersons.reduce((sum, s) => sum + (s.ftd_sales || 0), 0);
+  const totalFtdRevenue = salespersons.reduce((sum, s) => sum + (s.ftd_revenue || 0), 0);
   const totalMtdSales = salespersons.reduce((sum, s) => sum + (s.mtd_sales || 0), 0);
   const totalMtdRevenue = salespersons.reduce((sum, s) => sum + (s.mtd_revenue || 0), 0);
 
@@ -264,7 +266,7 @@ export const getStats = (filters = {}) => {
     totalCandidates, totalManagers, todayVisits, mtdVisits, ltdVisits,
     verifiedVisits, pendingVisits, rejectedVisits, verificationRate,
     activeToday, avgVisitsPerCandidate, coverageCities, totalDistance, latestDate,
-    totalMtdSales, totalMtdRevenue
+    totalFtdSales, totalFtdRevenue, totalMtdSales, totalMtdRevenue
   };
 };
 

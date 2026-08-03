@@ -202,15 +202,17 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
       </div>
 
       {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 10 }}>
         {[
           { label: 'Total BDs',          value: stats.totalCandidates,             icon: Users,         color: '#2563eb', bg: 'rgba(37,99,235,0.08)',  delay: 0.05 },
-          { label: 'MTD Sales Punches',  value: (stats.totalMtdSales || 0).toLocaleString(), icon: Briefcase, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', delay: 0.1 },
-          { label: 'MTD Revenue',        value: stats.totalMtdRevenue >= 100000 ? `₹ ${(stats.totalMtdRevenue / 100000).toFixed(1)} L` : `₹ ${(stats.totalMtdRevenue / 1000).toFixed(1)}k`, icon: DollarSign, color: '#10b981', bg: 'rgba(16,185,129,0.08)', delay: 0.15 },
-          { label: 'MTD Visits',          value: stats.mtdVisits.toLocaleString(),  icon: Activity,      color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)', delay: 0.2 },
-          { label: 'Cities Covered',      value: stats.coverageCities,              icon: MapPin,        color: '#7c3aed', bg: 'rgba(124,58,237,0.08)', delay: 0.25 },
-          { label: 'Active Today',        value: stats.activeToday,                 icon: Zap,           color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', delay: 0.3 },
-          { label: 'Avg Attendance',      value: '86.4%',                           icon: UserCheck,     color: '#64748b', bg: 'rgba(100,116,139,0.08)', delay: 0.35,  delta: '9.4 hrs avg field time', deltaUp: true },
+          { label: 'FTD Sales',          value: (stats.totalFtdSales || 0).toLocaleString(), icon: Briefcase, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', delay: 0.1 },
+          { label: 'FTD Revenue',        value: stats.totalFtdRevenue >= 100000 ? `₹ ${(stats.totalFtdRevenue / 100000).toFixed(1)} L` : `₹ ${(stats.totalFtdRevenue / 1000).toFixed(1)}k`, icon: DollarSign, color: '#10b981', bg: 'rgba(16,185,129,0.08)', delay: 0.15 },
+          { label: 'MTD Sales Punches',  value: (stats.totalMtdSales || 0).toLocaleString(), icon: Briefcase, color: '#e11d48', bg: 'rgba(225,29,72,0.08)',  delay: 0.2 },
+          { label: 'MTD Revenue',        value: stats.totalMtdRevenue >= 100000 ? `₹ ${(stats.totalMtdRevenue / 100000).toFixed(1)} L` : `₹ ${(stats.totalMtdRevenue / 1000).toFixed(1)}k`, icon: DollarSign, color: '#059669', bg: 'rgba(5,150,105,0.08)', delay: 0.25 },
+          { label: 'MTD Visits',          value: stats.mtdVisits.toLocaleString(),  icon: Activity,      color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)', delay: 0.3 },
+          { label: 'Cities Covered',      value: stats.coverageCities,              icon: MapPin,        color: '#7c3aed', bg: 'rgba(124,58,237,0.08)', delay: 0.35 },
+          { label: 'Active Today',        value: stats.activeToday,                 icon: Zap,           color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', delay: 0.4 },
+          { label: 'Avg Attendance',      value: '86.4%',                           icon: UserCheck,     color: '#64748b', bg: 'rgba(100,116,139,0.08)', delay: 0.45,  delta: '9.4 hrs avg field time', deltaUp: true },
         ].map((k, i) => (
           <KpiTile key={i} {...k} />
         ))}
