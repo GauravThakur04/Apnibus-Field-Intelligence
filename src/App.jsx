@@ -46,6 +46,7 @@ const App = () => {
   const [dataVersion, setDataVersion] = useState(0);
   const [selectedCandidateName, setSelectedCandidateName] = useState('');
   const [fetchError, setFetchError] = useState(null);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
 
   const allData = useMemo(() => getData(), [dataVersion]);
 
@@ -252,6 +253,70 @@ const App = () => {
         onClose={() => setIsConfigOpen(false)}
         onDataChanged={handleDataChanged}
       />
+
+      {/* Floating Diagnostics Button & Panel */}
+      <div style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 9999, fontFamily: 'monospace' }}>
+        <button
+          onClick={() => setDiagnosticsOpen(prev => !prev)}
+          style={{
+            background: '#1e293b',
+            color: '#f8fafc',
+            border: 'none',
+            padding: '8px 12px',
+            borderRadius: 6,
+            cursor: 'pointer',
+            fontSize: 12,
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6
+          }}
+        >
+          🔧 Diagnostics Console
+        </button>
+        {diagnosticsOpen && (() => {
+          const diag = window.__apnibus_diagnostics || {};
+          return (
+            <div style={{
+              position: 'absolute',
+              bottom: 40,
+              right: 0,
+              background: '#0f172a',
+              color: '#38bdf8',
+              border: '1px solid #334155',
+              borderRadius: 8,
+              padding: 16,
+              width: 320,
+              maxHeight: 400,
+              overflowY: 'auto',
+              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
+              fontSize: 11,
+              lineHeight: 1.5
+            }}>
+              <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid #334155', paddingBottom: 4, color: '#f8fafc' }}>
+                System Diagnostics
+              </h3>
+              <div><strong>Status:</strong> <span style={{ color: diag.fetchStatus === 'Success' ? '#4ade80' : diag.fetchStatus === 'Failed' ? '#f87171' : '#fbbf24' }}>{diag.fetchStatus}</span></div>
+              <div><strong>System Time:</strong> {new Date().toISOString()}</div>
+              <div><strong>System Date:</strong> {diag.systemTodayStr}</div>
+              <div><strong>Today String:</strong> {diag.DYNAMIC_TODAY_DATE}</div>
+              <div><strong>MTD Month:</strong> {diag.DYNAMIC_MTD_MONTH}</div>
+              <div style={{ margin: '8px 0', borderBottom: '1px solid #1e293b' }} />
+              <div><strong>Onboarding CSV Rows:</strong> {diag.onboardingCount}</div>
+              <div><strong>Sales CSV Rows:</strong> {diag.salesCount}</div>
+              <div><strong>Visits CSV Rows:</strong> {diag.visitsCount}</div>
+              <div><strong>Tracked Candidates:</strong> {diag.MASTER_CANDIDATES_COUNT}</div>
+              <div style={{ margin: '8px 0', borderBottom: '1px solid #1e293b' }} />
+              <div><strong>Last Updated:</strong> {diag.lastUpdated || 'Never'}</div>
+              {diag.error && (
+                <div style={{ color: '#f87171', marginTop: 8, wordBreak: 'break-all' }}>
+                  <strong>Error:</strong> {diag.error}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 };

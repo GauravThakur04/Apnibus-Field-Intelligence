@@ -47,6 +47,21 @@ const MASTER_CANDIDATES = [
   { id: 29, name: 'KULDEEP SINGH UDAWAT', mobile: '7852812254', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Udaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 }
 ];
 
+if (typeof window !== 'undefined') {
+  window.__apnibus_diagnostics = {
+    systemTodayStr: '',
+    DYNAMIC_TODAY_DATE: '',
+    DYNAMIC_MTD_MONTH: '',
+    fetchStatus: 'Idle',
+    error: null,
+    onboardingCount: 0,
+    salesCount: 0,
+    visitsCount: 0,
+    lastUpdated: null,
+    MASTER_CANDIDATES_COUNT: MASTER_CANDIDATES.length
+  };
+}
+
 const enrichInitialRawData = (raw) => {
   if (!raw || !Array.isArray(raw.salespersons)) return raw;
   const existingMap = new Map();
@@ -662,6 +677,10 @@ export const fetchLiveData = async () => {
     'rajnish.kumar@apnibus.com': 'https://data.apnibus.com/api/public/card/7420d1dc-f628-4628-b7cf-0abcbfe37b64/query/csv'
   };
 
+  if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
+    window.__apnibus_diagnostics.fetchStatus = 'Fetching';
+    window.__apnibus_diagnostics.error = null;
+  }
   try {
     const [onboardingRes, salesRes, sonuVisitsRes, tarunVisitsRes, rajnishVisitsRes] = await Promise.all([
       fetchCSVText(onboardingUrl),
@@ -909,9 +928,24 @@ export const fetchLiveData = async () => {
       visits: compiledVisits
     };
 
+    if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
+      window.__apnibus_diagnostics.onboardingCount = rawOnboarding.length;
+      window.__apnibus_diagnostics.salesCount = rawSales.length;
+      window.__apnibus_diagnostics.visitsCount = allVisits.length;
+      window.__apnibus_diagnostics.systemTodayStr = systemTodayStr;
+      window.__apnibus_diagnostics.DYNAMIC_TODAY_DATE = DYNAMIC_TODAY_DATE;
+      window.__apnibus_diagnostics.DYNAMIC_MTD_MONTH = DYNAMIC_MTD_MONTH;
+      window.__apnibus_diagnostics.fetchStatus = 'Success';
+      window.__apnibus_diagnostics.lastUpdated = new Date().toISOString();
+    }
+
     updateData(nextData);
     console.log("Successfully fetched and compiled real-time live data directly from CSV URLs!");
   } catch (err) {
+    if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
+      window.__apnibus_diagnostics.fetchStatus = 'Failed';
+      window.__apnibus_diagnostics.error = err.message || String(err);
+    }
     console.error("Live fetch and compile failed, using cached values.", err);
     throw err;
   }
