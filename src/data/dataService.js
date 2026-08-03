@@ -105,7 +105,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v8';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v9';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -614,6 +614,38 @@ function localParseCSV(csvText) {
   return result;
 }
 
+function formatToISODate(dateVal) {
+  if (!dateVal) return '';
+  const val = String(dateVal).trim();
+  // Case 1: YYYY-MM-DD ...
+  if (val.match(/^\d{4}-\d{2}-\d{2}/)) {
+    return val.slice(0, 10);
+  }
+  // Case 2: DD MMM YYYY ... (e.g. 01 Aug 2026 14:21)
+  const parts = val.split(/\s+/);
+  if (parts.length >= 3) {
+    const day = parts[0].padStart(2, '0');
+    const months = {
+      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+    };
+    const monthName = parts[1].toLowerCase().slice(0, 3);
+    const month = months[monthName];
+    const year = parts[2];
+    if (month && year.match(/^\d{4}$/)) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  // Fallback to standard JS Date parsing
+  try {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    }
+  } catch (e) {}
+  return val.slice(0, 10);
+}
+
 const fetchCSVText = async (url) => {
   // Always proxy via /api-live to bypass CORS in dev & prod (Vercel/Netlify rewrites)
   const target = url.replace('https://data.apnibus.com', '/api-live') + `?_cb=${Date.now()}`;
@@ -654,7 +686,7 @@ export const fetchLiveData = async () => {
     [...salesOrderRecords, ...onboardingOrderRecords].forEach(record => {
       const key = String(record.order_id || '').trim();
       const dateVal = record.created_on || record.order_date || '';
-      const fallbackKey = `${dateVal.slice(0, 10)}|${record.bd_code || ''}|${record.mobile || ''}|${record.payable_amount || ''}`;
+      const fallbackKey = `${formatToISODate(dateVal)}|${record.bd_code || ''}|${record.mobile || ''}|${record.payable_amount || ''}`;
       const recordKey = key || fallbackKey;
       if (!orderRecordsById.has(recordKey)) orderRecordsById.set(recordKey, record);
     });
@@ -703,7 +735,7 @@ export const fetchLiveData = async () => {
         if (!matchesCandidateLocal(record, candidate, aliases)) return;
 
         const amount = parseFloat(record.payable_amount || record.wallet_amount || record.amount || 0) || 0;
-        const dateStr = (record.created_on || record.order_date || '').slice(0, 10);
+        const dateStr = formatToISODate(record.created_on || record.order_date || '');
         const qty = parseInt(record.num_items || 1, 10) || 1;
 
         if (dateStr.startsWith(DYNAMIC_MTD_MONTH)) {
@@ -791,7 +823,7 @@ export const fetchLiveData = async () => {
 
       const punchedOrders = salesSummary.matched.map((record) => ({
         order_id: record.order_id,
-        date: (record.created_on || record.order_date || '').slice(0, 10),
+        date: formatToISODate(record.created_on || record.order_date || ''),
         time: (record.created_on || '').slice(11, 19),
         operator_name: record.operator_name || 'N/A',
         company_name: record.company_name || 'N/A',
