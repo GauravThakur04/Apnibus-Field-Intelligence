@@ -536,9 +536,15 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                 </div>
 
                 {isManager ? (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.45, padding: '10px 12px', background: isDark ? 'rgba(15, 23, 42, 0.3)' : '#f1f5f9', borderRadius: 8, fontStyle: 'italic' }}>
-                    Supervises daily regional field visits, performs live attendance checks, and reviews payment attribution.
-                  </div>
+                  <>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.45, padding: '10px 12px', background: isDark ? 'rgba(15, 23, 42, 0.3)' : '#f1f5f9', borderRadius: 8, fontStyle: 'italic' }}>
+                      Supervises daily regional field visits, performs live attendance checks, and reviews payment attribution.
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, background: 'var(--bg-input)', padding: '8px 10px', borderRadius: 8 }}>
+                      <div>Active Sales: <strong style={{ color: '#10b981' }}>{sp.activeSales || 0}</strong></div>
+                      <div>MTD Sales: <strong style={{ color: '#7c3aed' }}>{sp.mtd_sales || 0}</strong></div>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11, background: 'var(--bg-input)', padding: '8px 10px', borderRadius: 8 }}>
