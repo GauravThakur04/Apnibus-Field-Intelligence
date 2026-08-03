@@ -82,12 +82,269 @@ if (typeof window !== 'undefined') {
   };
 }
 
+
+
+function localNormalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatToISODate(dateVal) {
+  if (!dateVal) return '';
+  const val = String(dateVal).trim();
+  // Case 1: YYYY-MM-DD ...
+  if (val.match(/^\d{4}-\d{2}-\d{2}/)) {
+    return val.slice(0, 10);
+  }
+  // Case 2: DD MMM YYYY ... (e.g. 01 Aug 2026 14:21)
+  const parts = val.split(/\s+/);
+  if (parts.length >= 3) {
+    const day = parts[0].padStart(2, '0');
+    const months = {
+      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+    };
+    const monthName = parts[1].toLowerCase().slice(0, 3);
+    const month = months[monthName];
+    const year = parts[2];
+    if (month && year.match(/^\d{4}$/)) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  // Fallback to standard JS Date parsing
+  try {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    }
+  } catch (e) {}
+  return val.slice(0, 10);
+}
+
+function matchesCandidateLocal(record, candidate, aliases) {
+  const status = String(record.payment_status || record.paymentStatus || '').toUpperCase();
+  if (status === 'C') return false;
+
+  const recordName = localNormalizeText(record.rm_name || '');
+  const candidateName = localNormalizeText(candidate.name);
+  if (recordName && candidateName && recordName === candidateName) {
+    return true;
+  }
+
+  const phone = String(record.bd_code || '').replace(/\D/g, '');
+  const candidatePhone = String(candidate.mobile || '').replace(/\D/g, '');
+  if (candidatePhone && phone) {
+    if (candidatePhone === phone) return true;
+    return false;
+  }
+
+  if (!recordName) return false;
+  if (!candidateName) return false;
+  return aliases.includes(recordName);
+}
+
+function sumOrdersLocal(records, candidate, aliases, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE) {
+  const totals = { ftdCount: 0, ftdRevenue: 0, mtdCount: 0, mtdRevenue: 0, ltdCount: 0, ltdRevenue: 0 };
+  const matched = [];
+
+  records.forEach((record) => {
+    if (!matchesCandidateLocal(record, candidate, aliases)) return;
+
+    const amount = parseFloat(record.payable_amount || record.wallet_amount || record.amount || 0) || 0;
+    const dateStr = formatToISODate(record.created_on || record.order_date || '');
+    const qty = parseInt(record.num_items || 1, 10) || 1;
+
+    if (dateStr.startsWith(DYNAMIC_MTD_MONTH)) {
+      totals.mtdCount += qty;
+      totals.mtdRevenue += amount;
+
+      totals.ltdCount += qty;
+      totals.ltdRevenue += amount;
+
+      matched.push({ ...record, amount, dateStr });
+
+      if (dateStr === DYNAMIC_TODAY_DATE) {
+        totals.ftdCount += qty;
+        totals.ftdRevenue += amount;
+      }
+    }
+  });
+
+  return { ...totals, matched };
+}
+
+function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH) {
+  const salesOrderRecords = rawSales.map(r => ({ ...r, _source: 'sales' }));
+  const onboardingOrderRecords = rawOnboarding.map(r => ({ ...r, _source: 'onboarding' }));
+
+  const activeBDNames = new Set(MASTER_CANDIDATES.map(s => s.name.toLowerCase().trim()));
+
+  const compiledVisits = allVisits
+    .map(v => {
+      let name = (v.bd_name || '').trim();
+      if (name.toLowerCase() === 'amit kumar') {
+        name = 'Amit Rohilla';
+      }
+      return { ...v, bd_name: name };
+    })
+    .filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()))
+    .map(v => {
+      let city = 'Other';
+      let coords = [28.6139, 77.2090];
+      if (v.location) {
+        const locLower = v.location.toLowerCase();
+        for (const [key, val] of Object.entries(cityCoordinates)) {
+          if (locLower.includes(key)) {
+            city = key.charAt(0).toUpperCase() + key.slice(1);
+            coords = val;
+            break;
+          }
+        }
+        if (city === 'Other') {
+          const partsLoc = v.location.split(',');
+          if (partsLoc.length > 0 && partsLoc[0].trim()) city = partsLoc[0].trim();
+        }
+      } else if (v.state) {
+        city = v.state;
+      }
+
+      const seed = visitSeed(v);
+      const latOffset = ((seed % 100) / 100 - 0.5) * 0.04;
+      const lngOffset = (((seed >> 3) % 100) / 100 - 0.5) * 0.04;
+
+      return {
+        bd_name: v.bd_name,
+        visit_date: v.visit_date,
+        state: v.state || 'Delhi-NCR',
+        location: v.location || '',
+        operator_name: v.operator_name || 'N/A',
+        company_name: v.company_name || 'N/A',
+        operator_mobile_no: v.operator_mobile_no || '',
+        image_url: v.image_url || '',
+        type: v.type || 'FIRST_MEETING',
+        verify_status: v.verify_status || 'PENDING',
+        manager_email: v.manager_email,
+        city: city,
+        latitude: coords[0] + latOffset,
+        longitude: coords[1] + lngOffset
+      };
+    });
+
+  const salespersons = MASTER_CANDIDATES.map(c => {
+    const nameLower = c.name.toLowerCase().trim();
+    
+    const aliases = new Set();
+    aliases.add(localNormalizeText(c.name));
+    const phone = String(c.mobile || '').replace(/\D/g, '');
+    if (phone) aliases.add(phone);
+    const aliasesArr = Array.from(aliases);
+
+    const salesSummary = sumOrdersLocal(salesOrderRecords, c, aliasesArr, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE);
+    const onboardingSummary = sumOrdersLocal(onboardingOrderRecords, c, aliasesArr, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE);
+
+    const ftdSales = salesSummary.ftdCount;
+    const ftdRevenue = onboardingSummary.ftdRevenue;
+    const mtdSales = salesSummary.mtdCount;
+    const mtdRevenue = onboardingSummary.mtdRevenue;
+    const ltdSales = salesSummary.ltdCount;
+    const ltdRevenue = onboardingSummary.ltdRevenue;
+
+    const unionMap = new Map();
+    salesSummary.matched.forEach(o => unionMap.set(o.order_id || `${o.created_on}|${o.payable_amount}`, o));
+    onboardingSummary.matched.forEach(o => {
+      const key = o.order_id || `${o.created_on}|${o.payable_amount}`;
+      if (!unionMap.has(key)) unionMap.set(key, o);
+    });
+    const unionMatched = Array.from(unionMap.values());
+
+    const punchedOrders = unionMatched.map((record) => ({
+      order_id: record.order_id,
+      date: formatToISODate(record.created_on || record.order_date || ''),
+      time: (record.created_on || '').slice(11, 19),
+      operator_name: record.operator_name || 'N/A',
+      company_name: record.company_name || 'N/A',
+      mobile: record.mobile || record.bd_code || 'N/A',
+      setup_fee: parseFloat(record.setup_fee || 0),
+      wallet_amount: parseFloat(record.wallet_amount || 0),
+      payable_amount: parseFloat(record.payable_amount || record.wallet_amount || 0),
+      num_items: parseInt(record.num_items || 1, 10) || 1,
+      payment_status: record.payment_status || 'S',
+      state: record.operator_state || record.bd_state || 'N/A',
+      source: record._source
+    })).sort((a, b) => a.date.localeCompare(b.date));
+
+    const bdVisits = compiledVisits.filter(v => (v.bd_name || '').toLowerCase().trim() === nameLower);
+    const mtdVisitsList = bdVisits.filter(v => (v.visit_date || '').startsWith(DYNAMIC_MTD_MONTH));
+    const todayVisitsList = bdVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE);
+
+    const getVisitTime = (v) => {
+      if (!v.visit_date) return 9 * 60 + 30;
+      const t = (v.visit_date || '').split(' ');
+      if (t.length < 4) return 9 * 60 + 30;
+      const timeParts = t[3].split(':');
+      if (timeParts.length < 2) return 9 * 60 + 30;
+      const hrs = parseInt(timeParts[0], 10);
+      const mins = parseInt(timeParts[1], 10);
+      return hrs * 60 + mins;
+    };
+
+    const fmtTime = (minTotal) => {
+      const h = Math.floor(minTotal / 60);
+      const m = minTotal % 60;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const displayH = h % 12 === 0 ? 12 : h % 12;
+      return `${String(displayH).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+    };
+
+    return {
+      ...c,
+      user_id: c.mobile,
+      status: 'Active',
+      productivity_score: 90,
+      designation: c.role || 'BD',
+      today_visits: todayVisitsList.length,
+      mtd_visits: mtdVisitsList.length,
+      ltd_visits: bdVisits.length,
+      ftd_sales: ftdSales,
+      ftd_revenue: ftdRevenue,
+      mtd_sales: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdSales > 0 ? mtdSales : c.july_ach_pos_user) : mtdSales,
+      mtd_revenue: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdRevenue > 0 ? mtdRevenue : c.july_ach_rev_user) : mtdRevenue,
+      ltd_sales: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdSales > 0 ? ltdSales : c.july_ach_pos_user) : ltdSales,
+      ltd_revenue: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
+      sale_punches: mtdSales,
+      punched_orders: punchedOrders,
+      start_day_time: todayVisitsList.length > 0
+        ? (() => {
+            const sorted = [...todayVisitsList].sort((a, b) => getVisitTime(a) - getVisitTime(b));
+            const firstMin = getVisitTime(sorted[0]);
+            return fmtTime(Math.max(firstMin - 30, 8 * 60));
+          })()
+        : 'Not Started',
+      onboarding_payment_ftd: ftdRevenue,
+      onboarding_payment_mtd: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdRevenue > 0 ? mtdRevenue : c.july_ach_rev_user) : mtdRevenue,
+      onboarding_payment_ltd: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
+      mtd_attendance_pct: 86
+    };
+  });
+
+  return { salespersons, visits: compiledVisits };
+}
+
 const enrichInitialRawData = (raw) => {
   if (!raw || !Array.isArray(raw.salespersons)) return raw;
   const existingMap = new Map();
   raw.salespersons.forEach(s => {
     if (s && s.name) existingMap.set(s.name.toLowerCase().trim(), s);
   });
+
+  const systemTodayStr = typeof window !== 'undefined'
+    ? new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+    : new Date().toISOString().slice(0, 10);
+  const isJuly = systemTodayStr.slice(0, 7) === '2026-07';
 
   const enrichedSalespersons = MASTER_CANDIDATES.map(c => {
     const nameLower = c.name.toLowerCase().trim();
@@ -97,23 +354,23 @@ const enrichInitialRawData = (raw) => {
       status: 'Active',
       productivity_score: 90,
       designation: c.role || 'Salesperson',
+      ...existing,
       today_visits: 0,
       mtd_visits: 0,
       ltd_visits: 0,
       ftd_sales: 0,
       ftd_revenue: 0,
-      mtd_sales: c.july_ach_pos_user || 0,
-      mtd_revenue: c.july_ach_rev_user || 0,
-      ltd_sales: c.july_ach_pos_user || 0,
-      ltd_revenue: c.july_ach_rev_user || 0,
-      sale_punches: c.july_ach_pos_user || 0,
+      mtd_sales: isJuly ? (c.july_ach_pos_user || 0) : 0,
+      mtd_revenue: isJuly ? (c.july_ach_rev_user || 0) : 0,
+      ltd_sales: isJuly ? (c.july_ach_pos_user || 0) : 0,
+      ltd_revenue: isJuly ? (c.july_ach_rev_user || 0) : 0,
+      sale_punches: isJuly ? (c.july_ach_pos_user || 0) : 0,
       punched_orders: [],
       start_day_time: 'Not Started',
       onboarding_payment_ftd: 0,
-      onboarding_payment_mtd: c.july_ach_rev_user || 0,
-      onboarding_payment_ltd: c.july_ach_rev_user || 0,
+      onboarding_payment_mtd: isJuly ? (c.july_ach_rev_user || 0) : 0,
+      onboarding_payment_ltd: isJuly ? (c.july_ach_rev_user || 0) : 0,
       mtd_attendance_pct: 86,
-      ...existing,
       ...c
     };
   });
@@ -135,10 +392,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-// ─── State with Safe LocalStorage Fallback ───
-// Bump this whenever source mappings change so browsers do not keep serving a
-// previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v17';
+const DATA_MAPPING_VERSION = '2026-08-04-cache-healing-v18';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -154,11 +408,37 @@ try {
   try { localStorage.removeItem('apnibus_dashboard_data'); } catch (e) {}
 }
 
-export const getData = () => currentData || enrichInitialRawData(rawData);
+export const getData = () => {
+  const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  if (currentData && currentData._lastDate && currentData._lastDate !== systemTodayStr && currentData._rawSales && currentData._rawOnboarding) {
+    const DYNAMIC_TODAY_DATE = systemTodayStr;
+    const DYNAMIC_MTD_MONTH = systemTodayStr.slice(0, 7);
+    const compiledSalespersons = compileSalespersons(
+      currentData._rawSales,
+      currentData._rawOnboarding,
+      currentData.visits || [],
+      DYNAMIC_TODAY_DATE,
+      DYNAMIC_MTD_MONTH
+    );
+    currentData = {
+      ...currentData,
+      _lastDate: systemTodayStr,
+      salespersons: compiledSalespersons,
+      managers: MANAGERS.map(mgr => {
+        const team = compiledSalespersons.filter(s => s.manager_email === mgr.email);
+        return { ...mgr, bd_count: team.length };
+      })
+    };
+    try { localStorage.setItem('apnibus_dashboard_data', JSON.stringify(currentData)); } catch (_) {}
+  }
+  return currentData || enrichInitialRawData(rawData);
+};
+
 export const updateData = (d) => {
   currentData = { ...d, _mappingVersion: DATA_MAPPING_VERSION };
   try { localStorage.setItem('apnibus_dashboard_data', JSON.stringify(currentData)); } catch (_) {}
 };
+
 export const resetData = () => {
   currentData = enrichInitialRawData(rawData);
   try { localStorage.removeItem('apnibus_dashboard_data'); } catch (_) {}
@@ -652,37 +932,7 @@ function localParseCSV(csvText) {
   return result;
 }
 
-function formatToISODate(dateVal) {
-  if (!dateVal) return '';
-  const val = String(dateVal).trim();
-  // Case 1: YYYY-MM-DD ...
-  if (val.match(/^\d{4}-\d{2}-\d{2}/)) {
-    return val.slice(0, 10);
-  }
-  // Case 2: DD MMM YYYY ... (e.g. 01 Aug 2026 14:21)
-  const parts = val.split(/\s+/);
-  if (parts.length >= 3) {
-    const day = parts[0].padStart(2, '0');
-    const months = {
-      jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-      jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
-    };
-    const monthName = parts[1].toLowerCase().slice(0, 3);
-    const month = months[monthName];
-    const year = parts[2];
-    if (month && year.match(/^\d{4}$/)) {
-      return `${year}-${month}-${day}`;
-    }
-  }
-  // Fallback to standard JS Date parsing
-  try {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-    }
-  } catch (e) {}
-  return val.slice(0, 10);
-}
+
 
 const fetchCSVText = async (url, signal = null) => {
   // Always proxy via /api-live to bypass CORS in dev & prod (Vercel/Netlify rewrites)
@@ -748,237 +998,17 @@ export const fetchLiveData = async () => {
 
     const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits, ...rawRajwinderVisits];
 
-    const salesOrderRecords = rawSales.map(r => ({ ...r, _source: 'sales' }));
-    const onboardingOrderRecords = rawOnboarding.map(r => ({ ...r, _source: 'onboarding' }));
-
-    const orderRecordsById = new Map();
-    [...salesOrderRecords, ...onboardingOrderRecords].forEach(record => {
-      const key = String(record.order_id || '').trim();
-      const dateVal = record.created_on || record.order_date || '';
-      const fallbackKey = `${formatToISODate(dateVal)}|${record.bd_code || ''}|${record.mobile || ''}|${record.payable_amount || ''}`;
-      const recordKey = key || fallbackKey;
-      if (!orderRecordsById.has(recordKey)) orderRecordsById.set(recordKey, record);
-    });
-    const orderRecords = [...orderRecordsById.values()];
-
     const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const DYNAMIC_TODAY_DATE = systemTodayStr;
     const DYNAMIC_MTD_MONTH = systemTodayStr.slice(0, 7);
 
-    function localNormalizeText(value) {
-      return String(value || '')
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    }
-
-    function matchesCandidateLocal(record, candidate, aliases) {
-      const status = String(record.payment_status || record.paymentStatus || '').toUpperCase();
-      if (status === 'C') return false;
-
-      const recordName = localNormalizeText(record.rm_name || '');
-      const candidateName = localNormalizeText(candidate.name);
-      if (recordName && candidateName && recordName === candidateName) {
-        return true;
-      }
-
-      const phone = String(record.bd_code || '').replace(/\D/g, '');
-      const candidatePhone = String(candidate.mobile || '').replace(/\D/g, '');
-      if (candidatePhone && phone) {
-        if (candidatePhone === phone) return true;
-        return false;
-      }
-
-      if (!recordName) return false;
-      if (!candidateName) return false;
-      return aliases.includes(recordName);
-    }
-
-    function sumOrdersLocal(records, candidate, aliases) {
-      const totals = { ftdCount: 0, ftdRevenue: 0, mtdCount: 0, mtdRevenue: 0, ltdCount: 0, ltdRevenue: 0 };
-      const matched = [];
-
-      records.forEach((record) => {
-        if (!matchesCandidateLocal(record, candidate, aliases)) return;
-
-        const amount = parseFloat(record.payable_amount || record.wallet_amount || record.amount || 0) || 0;
-        const dateStr = formatToISODate(record.created_on || record.order_date || '');
-        const qty = parseInt(record.num_items || 1, 10) || 1;
-
-        if (dateStr.startsWith(DYNAMIC_MTD_MONTH)) {
-          totals.mtdCount += qty;
-          totals.mtdRevenue += amount;
-
-          totals.ltdCount += qty;
-          totals.ltdRevenue += amount;
-
-          matched.push({ ...record, amount, dateStr });
-
-          if (dateStr === DYNAMIC_TODAY_DATE) {
-            totals.ftdCount += qty;
-            totals.ftdRevenue += amount;
-          }
-        }
-      });
-
-      return { ...totals, matched };
-    }
-
-    const activeBDNames = new Set(MASTER_CANDIDATES.map(s => s.name.toLowerCase().trim()));
-
-    const compiledVisits = allVisits
-      .map(v => {
-        let name = (v.bd_name || '').trim();
-        if (name.toLowerCase() === 'amit kumar') {
-          name = 'Amit Rohilla';
-        }
-        return { ...v, bd_name: name };
-      })
-      .filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()))
-      .map(v => {
-        let city = 'Other';
-        let coords = [28.6139, 77.2090];
-        if (v.location) {
-          const locLower = v.location.toLowerCase();
-          for (const [key, val] of Object.entries(cityCoordinates)) {
-            if (locLower.includes(key)) {
-              city = key.charAt(0).toUpperCase() + key.slice(1);
-              coords = val;
-              break;
-            }
-          }
-          if (city === 'Other') {
-            const partsLoc = v.location.split(',');
-            if (partsLoc.length > 0 && partsLoc[0].trim()) city = partsLoc[0].trim();
-          }
-        } else if (v.state) {
-          city = v.state;
-        }
-
-        const seed = visitSeed(v);
-        const latOffset = ((seed % 100) / 100 - 0.5) * 0.04;
-        const lngOffset = (((seed >> 3) % 100) / 100 - 0.5) * 0.04;
-
-        return {
-          bd_name: v.bd_name,
-          visit_date: v.visit_date,
-          state: v.state || 'Delhi-NCR',
-          location: v.location || '',
-          operator_name: v.operator_name || 'N/A',
-          company_name: v.company_name || 'N/A',
-          operator_mobile_no: v.operator_mobile_no || '',
-          image_url: v.image_url || '',
-          type: v.type || 'FIRST_MEETING',
-          verify_status: v.verify_status || 'PENDING',
-          manager_email: v.manager_email,
-          city: city,
-          latitude: coords[0] + latOffset,
-          longitude: coords[1] + lngOffset
-        };
-      });
-
-    const compiledSalespersons = MASTER_CANDIDATES.map(c => {
-      const nameLower = c.name.toLowerCase().trim();
-      
-      const aliases = new Set();
-      aliases.add(localNormalizeText(c.name));
-      const phone = String(c.mobile || '').replace(/\D/g, '');
-      if (phone) aliases.add(phone);
-      const aliasesArr = Array.from(aliases);
-
-      const salesSummary = sumOrdersLocal(salesOrderRecords, c, aliasesArr);
-      const onboardingSummary = sumOrdersLocal(onboardingOrderRecords, c, aliasesArr);
-
-      const ftdSales = salesSummary.ftdCount;
-      const ftdRevenue = onboardingSummary.ftdRevenue;
-      const mtdSales = salesSummary.mtdCount;
-      const mtdRevenue = onboardingSummary.mtdRevenue;
-      const ltdSales = salesSummary.ltdCount;
-      const ltdRevenue = onboardingSummary.ltdRevenue;
-
-      // Union the matched orders for history list display
-      const unionMap = new Map();
-      salesSummary.matched.forEach(o => unionMap.set(o.order_id || `${o.created_on}|${o.payable_amount}`, o));
-      onboardingSummary.matched.forEach(o => {
-        const key = o.order_id || `${o.created_on}|${o.payable_amount}`;
-        if (!unionMap.has(key)) unionMap.set(key, o);
-      });
-      const unionMatched = Array.from(unionMap.values());
-
-      const punchedOrders = unionMatched.map((record) => ({
-        order_id: record.order_id,
-        date: formatToISODate(record.created_on || record.order_date || ''),
-        time: (record.created_on || '').slice(11, 19),
-        operator_name: record.operator_name || 'N/A',
-        company_name: record.company_name || 'N/A',
-        mobile: record.mobile || record.bd_code || 'N/A',
-        setup_fee: parseFloat(record.setup_fee || 0),
-        wallet_amount: parseFloat(record.wallet_amount || 0),
-        payable_amount: parseFloat(record.payable_amount || record.wallet_amount || 0),
-        num_items: parseInt(record.num_items || 1, 10) || 1,
-        payment_status: record.payment_status || 'S',
-        state: record.operator_state || record.bd_state || 'N/A',
-        source: record._source
-      })).sort((a, b) => a.date.localeCompare(b.date));
-
-      const bdVisits = compiledVisits.filter(v => (v.bd_name || '').toLowerCase().trim() === nameLower);
-      const mtdVisitsList = bdVisits.filter(v => (v.visit_date || '').startsWith(DYNAMIC_MTD_MONTH));
-      const todayVisitsList = bdVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE);
-
-      const MORNING_START_TIMES = {
-        'amit rohilla': '09:00 AM',
-        'sukhdev singh': '09:15 AM',
-        'shubham singh': '09:30 AM',
-        'mohit': '09:30 AM',
-        'akash singh': '09:00 AM',
-        'syed arshi abrar': '09:30 AM',
-        'chuna ram': '09:15 AM',
-        'arshdeep singh': '09:30 AM',
-        'harish verma': '09:15 AM',
-        'karan raina': '09:30 AM',
-        'shubham dhiman': '09:15 AM',
-        'vivek kumar kaundal': '09:30 AM',
-        'rajiv kumar': '09:45 AM',
-        'surinder singh': '09:30 AM',
-        'rajat sharma': '09:30 AM',
-        'anand kumar singh': '09:15 AM',
-        'manish bhati': '09:15 AM',
-        'sarfaraj khan': '09:15 AM',
-        'shiv dayal': '09:30 AM'
-      };
-
-      return {
-        ...c,
-        user_id: c.mobile,
-        status: 'Active',
-        productivity_score: 90,
-        designation: c.role || 'BD',
-        today_visits: todayVisitsList.length,
-        mtd_visits: mtdVisitsList.length,
-        ltd_visits: bdVisits.length,
-        ftd_sales: ftdSales,
-        ftd_revenue: ftdRevenue,
-        mtd_sales: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdSales > 0 ? mtdSales : c.july_ach_pos_user) : mtdSales,
-        mtd_revenue: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdRevenue > 0 ? mtdRevenue : c.july_ach_rev_user) : mtdRevenue,
-        ltd_sales: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdSales > 0 ? ltdSales : c.july_ach_pos_user) : ltdSales,
-        ltd_revenue: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
-        sale_punches: mtdSales,
-        punched_orders: punchedOrders,
-        start_day_time: todayVisitsList.length > 0
-          ? (() => {
-              const sorted = [...todayVisitsList].sort((a, b) => getVisitTime(a) - getVisitTime(b));
-              const firstMin = getVisitTime(sorted[0]);
-              return fmtTime(Math.max(firstMin - 30, 8 * 60));
-            })()
-          : 'Not Started',
-        onboarding_payment_ftd: ftdRevenue,
-        onboarding_payment_mtd: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdRevenue > 0 ? mtdRevenue : c.july_ach_rev_user) : mtdRevenue,
-        onboarding_payment_ltd: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
-        mtd_attendance_pct: 86
-      };
-    });
+    const { salespersons: compiledSalespersons, visits: compiledVisits } = compileSalespersons(
+      rawSales,
+      rawOnboarding,
+      allVisits,
+      DYNAMIC_TODAY_DATE,
+      DYNAMIC_MTD_MONTH
+    );
 
     const nextData = {
       managers: MANAGERS.map(mgr => {
@@ -986,7 +1016,10 @@ export const fetchLiveData = async () => {
         return { ...mgr, bd_count: team.length };
       }),
       salespersons: compiledSalespersons,
-      visits: compiledVisits
+      visits: compiledVisits,
+      _rawSales: rawSales,
+      _rawOnboarding: rawOnboarding,
+      _lastDate: systemTodayStr
     };
 
     if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
@@ -1001,6 +1034,7 @@ export const fetchLiveData = async () => {
     }
 
     updateData(nextData);
+
     console.log("Successfully fetched and compiled real-time live data directly from CSV URLs!");
   } catch (err) {
     if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
