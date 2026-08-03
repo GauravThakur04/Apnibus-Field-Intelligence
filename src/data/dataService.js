@@ -118,7 +118,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v14';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v15';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -709,13 +709,13 @@ export const fetchLiveData = async () => {
 
     // Fetch visits in parallel but handle timeouts/failures individually
     await Promise.all([
-      fetchCSVWithTimeout(visitsUrls['sonu.mishra@apnibus.com'], 8000)
+      fetchCSVWithTimeout(visitsUrls['sonu.mishra@apnibus.com'], 25000)
         .then(res => { rawSonuVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' })); })
         .catch(e => console.warn("Failed/Timed out loading Sonu visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['tarun.kumar@apnibus.com'], 8000)
+      fetchCSVWithTimeout(visitsUrls['tarun.kumar@apnibus.com'], 25000)
         .then(res => { rawTarunVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' })); })
         .catch(e => console.warn("Failed/Timed out loading Tarun visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['rajnish.kumar@apnibus.com'], 8000)
+      fetchCSVWithTimeout(visitsUrls['rajnish.kumar@apnibus.com'], 25000)
         .then(res => { rawRajnishVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' })); })
         .catch(e => console.warn("Failed/Timed out loading Rajnish visits, using fallback:", e))
     ]);
