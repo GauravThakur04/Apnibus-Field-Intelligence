@@ -328,7 +328,9 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
           <div style={{ width: 1, background: 'rgba(255,255,255,0.2)' }} />
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>Team Revenue Generated</div>
-            <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-header)' }}>₹ {(teamRevenue / 100000).toFixed(1)} L</div>
+            <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-header)' }}>
+              {teamRevenue >= 100000 ? `₹ ${(teamRevenue / 100000).toFixed(1)} L` : `₹ ${(teamRevenue / 1000).toFixed(1)}k`}
+            </div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.2)' }} />
           <div style={{ textAlign: 'center' }}>
