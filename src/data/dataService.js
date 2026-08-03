@@ -118,7 +118,7 @@ const enrichInitialRawData = (raw) => {
 // ─── State with Safe LocalStorage Fallback ───
 // Bump this whenever source mappings change so browsers do not keep serving a
 // previously cached, incorrectly attributed dashboard.
-const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v13';
+const DATA_MAPPING_VERSION = '2026-08-03-sales-owner-v14';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -659,12 +659,25 @@ function formatToISODate(dateVal) {
   return val.slice(0, 10);
 }
 
-const fetchCSVText = async (url) => {
+const fetchCSVText = async (url, signal = null) => {
   // Always proxy via /api-live to bypass CORS in dev & prod (Vercel/Netlify rewrites)
   const target = url.replace('https://data.apnibus.com', '/api-live') + `?_cb=${Date.now()}`;
-  const res = await fetch(target);
+  const res = await fetch(target, { signal });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${target}`);
   return await res.text();
+};
+
+const fetchCSVWithTimeout = async (url, timeoutMs = 8000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetchCSVText(url, controller.signal);
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
 };
 
 export const fetchLiveData = async () => {
@@ -682,19 +695,31 @@ export const fetchLiveData = async () => {
     window.__apnibus_diagnostics.error = null;
   }
   try {
-    const [onboardingRes, salesRes, sonuVisitsRes, tarunVisitsRes, rajnishVisitsRes] = await Promise.all([
-      fetchCSVText(onboardingUrl),
-      fetchCSVText(salesUrl),
-      fetchCSVText(visitsUrls['sonu.mishra@apnibus.com']),
-      fetchCSVText(visitsUrls['tarun.kumar@apnibus.com']),
-      fetchCSVText(visitsUrls['rajnish.kumar@apnibus.com'])
+    const [onboardingRes, salesRes] = await Promise.all([
+      fetchCSVWithTimeout(onboardingUrl, 8000),
+      fetchCSVWithTimeout(salesUrl, 8000)
     ]);
 
     const rawOnboarding = localParseCSV(onboardingRes);
     const rawSales = localParseCSV(salesRes);
-    const rawSonuVisits = localParseCSV(sonuVisitsRes).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' }));
-    const rawTarunVisits = localParseCSV(tarunVisitsRes).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' }));
-    const rawRajnishVisits = localParseCSV(rajnishVisitsRes).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' }));
+
+    let rawSonuVisits = [];
+    let rawTarunVisits = [];
+    let rawRajnishVisits = [];
+
+    // Fetch visits in parallel but handle timeouts/failures individually
+    await Promise.all([
+      fetchCSVWithTimeout(visitsUrls['sonu.mishra@apnibus.com'], 8000)
+        .then(res => { rawSonuVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' })); })
+        .catch(e => console.warn("Failed/Timed out loading Sonu visits, using fallback:", e)),
+      fetchCSVWithTimeout(visitsUrls['tarun.kumar@apnibus.com'], 8000)
+        .then(res => { rawTarunVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' })); })
+        .catch(e => console.warn("Failed/Timed out loading Tarun visits, using fallback:", e)),
+      fetchCSVWithTimeout(visitsUrls['rajnish.kumar@apnibus.com'], 8000)
+        .then(res => { rawRajnishVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' })); })
+        .catch(e => console.warn("Failed/Timed out loading Rajnish visits, using fallback:", e))
+    ]);
+
     const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits];
 
     const salesOrderRecords = rawSales.map(r => ({ ...r, _source: 'sales' }));
