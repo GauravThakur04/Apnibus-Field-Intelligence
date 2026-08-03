@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Filter, Search, Download, Calendar, DollarSign, TrendingUp, Users } from 'lucide-react';
+import { Filter, Search, DollarSign } from 'lucide-react';
 import { getData } from '../data/dataService';
 
 const OnboardingPayments = ({ theme }) => {
@@ -11,23 +11,26 @@ const OnboardingPayments = ({ theme }) => {
 
   const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const DYNAMIC_MTD_MONTH = systemTodayStr.slice(0, 7);
-  const isDark = theme === 'dark';
 
-  // Collect ALL onboarding orders from all salespersons
+
+  // Collect ALL punched_orders from all salespersons (sales + onboarding — same revenue data)
   const allOrders = useMemo(() => {
     const orders = [];
+    const seen = new Set();
     (allData.salespersons || []).forEach(sp => {
       if (!Array.isArray(sp.punched_orders)) return;
       sp.punched_orders.forEach(o => {
-        if (o.source === 'onboarding') {
-          orders.push({
-            ...o,
-            bd_name: sp.name,
-            bd_role: sp.role || 'BD',
-            manager_email: sp.manager_email,
-            manager_name: sp.manager_name || '',
-          });
-        }
+        // Deduplicate by order_id so union entries are not double-counted
+        const key = o.order_id ? String(o.order_id) : `${o.date}|${o.payable_amount}|${sp.name}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        orders.push({
+          ...o,
+          bd_name: sp.name,
+          bd_role: sp.role || 'BD',
+          manager_email: sp.manager_email,
+          manager_name: sp.manager_name || '',
+        });
       });
     });
     return orders.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -53,6 +56,7 @@ const OnboardingPayments = ({ theme }) => {
 
   const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.payable_amount || 0), 0);
   const uniqueBDs = new Set(filteredOrders.map(o => o.bd_name)).size;
+  const totalOrders = filteredOrders.length;
 
   const managers = [
     { email: 'ALL', name: 'All Managers' },
@@ -84,7 +88,7 @@ const OnboardingPayments = ({ theme }) => {
         </div>
         <div style={{ display: 'flex', gap: 20, background: 'rgba(255,255,255,0.15)', padding: '12px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.2)' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, textTransform: 'uppercase' }}>Total Revenue</div>
+            <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, textTransform: 'uppercase' }}>Revenue</div>
             <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-header)' }}>
               {totalRevenue >= 100000 ? `₹${(totalRevenue/100000).toFixed(1)}L` : `₹${(totalRevenue/1000).toFixed(1)}k`}
             </div>
@@ -92,7 +96,7 @@ const OnboardingPayments = ({ theme }) => {
           <div style={{ width: 1, background: 'rgba(255,255,255,0.2)' }} />
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, textTransform: 'uppercase' }}>Orders</div>
-            <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-header)' }}>{filteredOrders.length}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-header)' }}>{totalOrders}</div>
           </div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.2)' }} />
           <div style={{ textAlign: 'center' }}>
@@ -153,7 +157,10 @@ const OnboardingPayments = ({ theme }) => {
         <div className="card-header">
           <div>
             <div className="card-title">Payment Records ({filteredOrders.length})</div>
-            <div className="card-subtitle">Real-time onboarding payments from the Metabase CSV feed</div>
+            <div className="card-subtitle">
+              Live payment punches from Metabase — same data used for FTD / MTD revenue
+              {allOrders.length === 0 && ' · Fetching live data…'}
+            </div>
           </div>
         </div>
         <div className="card-body">
@@ -166,24 +173,28 @@ const OnboardingPayments = ({ theme }) => {
                   <th>Role</th>
                   <th>Operator</th>
                   <th>Company</th>
+                  <th>State</th>
                   <th>Order ID</th>
                   <th>Setup Fee</th>
-                  <th>Wallet Amt</th>
+                  <th>Wallet</th>
                   <th>Payable</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredOrders.length === 0 ? (
-                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>No payment records found for selected filters.</td></tr>
+                  <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
+                    {allOrders.length === 0 ? '⏳ Loading live data… (fetching from Metabase CSV)' : 'No payment records match the selected filters.'}
+                  </td></tr>
                 ) : filteredOrders.map((o, i) => (
                   <tr key={i}>
                     <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{o.date || '—'}</td>
                     <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>{o.bd_name || '—'}</td>
                     <td><span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'var(--bg-input)', fontWeight: 700 }}>{o.bd_role}</span></td>
                     <td>{o.operator_name || '—'}</td>
-                    <td>{o.company_name || '—'}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{(o.order_id || '').toString().slice(0, 16)}</td>
+                    <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.company_name || '—'}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 11 }}>{o.state || '—'}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--text-muted)' }}>{(o.order_id || '').toString().slice(0, 18)}</td>
                     <td>₹{(o.setup_fee || 0).toLocaleString()}</td>
                     <td>₹{(o.wallet_amount || 0).toLocaleString()}</td>
                     <td style={{ fontWeight: 800, color: '#10b981' }}>₹{(o.payable_amount || 0).toLocaleString()}</td>
