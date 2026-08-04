@@ -12,11 +12,7 @@
   ],
   "rewrites": [
     {
-      "source": "/api-live/:path*",
-      "destination": "https://data.apnibus.com/:path*"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!api).*)",
       "destination": "/index.html"
     }
   ]

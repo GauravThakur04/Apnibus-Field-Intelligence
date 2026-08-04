@@ -86,8 +86,7 @@ currentData.salespersons.forEach((sp) => {
   let ftdRevenue = 0;
   let mtdSales = 0;
   let mtdRevenue = 0;
-  let ltdSales = 0;
-  let ltdRevenue = 0;
+
 
   matchingOrders.forEach(o => {
     const dateStr = (o.created_on || '').slice(0, 10);
@@ -111,8 +110,6 @@ currentData.salespersons.forEach((sp) => {
   sp.ftd_revenue = ftdRevenue;
   sp.mtd_sales = mtdSales;
   sp.mtd_revenue = mtdRevenue;
-  sp.ltd_sales = ltdSales;
-  sp.ltd_revenue = ltdRevenue;
   sp.sale_punches = mtdSales;
 });
 
@@ -126,7 +123,7 @@ let totalCompanySales = 0;
 currentData.salespersons.forEach(sp => {
   totalCompanyRev += sp.mtd_revenue;
   totalCompanySales += sp.mtd_sales;
-  console.log(`BD: ${sp.name.padEnd(20)} | FTD: ${sp.ftd_sales} (₹ ${sp.ftd_revenue.toLocaleString()}) | MTD: ${sp.mtd_sales} (₹ ${sp.mtd_revenue.toLocaleString()}) | LTD: ${sp.ltd_sales} (₹ ${sp.ltd_revenue.toLocaleString()})`);
+  console.log(`BD: ${sp.name.padEnd(20)} | FTD: ${sp.ftd_sales} (₹ ${sp.ftd_revenue.toLocaleString()}) | MTD: ${sp.mtd_sales} (₹ ${sp.mtd_revenue.toLocaleString()})`);
 });
 
 console.log(`\nTOTAL COMPANY MTD SALES: ${totalCompanySales}`);

@@ -93,6 +93,29 @@ function localNormalizeText(value) {
     .trim();
 }
 
+function normalizePhone(value) {
+  if (!value) return '';
+  return String(value || '')
+    .replace(/[^0-9]+/g, '')
+    .replace(/^0+/, '')
+    .trim();
+}
+
+function getCandidatePhones(candidate) {
+  const phones = new Set();
+  [candidate.mobile, candidate.bd_code, candidate.phone, candidate.contact, candidate.manager_mobile, ...(candidate.alt_phones || [])].forEach(value => {
+    const phone = normalizePhone(value);
+    if (phone.length >= 8) phones.add(phone);
+  });
+  return Array.from(phones);
+}
+
+function getRecordPhones(record) {
+  return [record.bd_code, record.bd_id, record.bd_mobile, record.rm_mobile, record.employee_mobile, record.bd_phone, record.mobile, record.phone, record.mobile_no, record.operator_mobile_no]
+    .map(normalizePhone)
+    .filter(phone => phone.length >= 8);
+}
+
 function formatToISODate(dateVal) {
   if (!dateVal) return '';
   const val = String(dateVal).trim();
@@ -177,38 +200,51 @@ function matchesCandidateLocal(record, candidate, aliases) {
   const status = String(record.payment_status || record.paymentStatus || '').toUpperCase();
   if (status === 'C') return false;
 
-  // Try phone match first (most reliable) using aliases
-  const phone = String(record.bd_code || '').replace(/\D/g, '');
-  if (phone && aliases.includes(phone)) return true;
+  const recordPhones = getRecordPhones(record);
+  if (recordPhones.length && recordPhones.some(phone => aliases.includes(phone))) return true;
 
-  // Try exact normalized name match
-  const recordName = localNormalizeText(record.rm_name || record.bd_name || '');
+  const names = [record.rm_name, record.bd_name, record.bd_full_name, record.salesperson_name,
+    record.sales_person_name, record.employee_name, record.executive_name]
+    .map(localNormalizeText)
+    .filter(Boolean);
   const candidateName = localNormalizeText(candidate.name);
-  if (recordName && candidateName) {
+  if (names.includes(candidateName)) return true;
+
+  for (const recordName of names) {
     if (recordName === candidateName) return true;
-    // Partial match: CSV name contains candidate name OR candidate name contains CSV name
-    // (handles cases like 'anand kumar' matching 'Anand Kumar singh')
     if (recordName.length >= 4 && candidateName.includes(recordName)) return true;
     if (candidateName.length >= 4 && recordName.includes(candidateName)) return true;
   }
 
-  if (!recordName) return false;
-  return aliases.includes(recordName);
+  return aliases.includes(localNormalizeText(record.bd_name || record.rm_name || record.name || ''));
 }
 
 function resolveCandidateForPayment(record, candidates) {
-  const phoneFields = [record.bd_code, record.bd_id, record.bd_mobile, record.rm_mobile, record.employee_mobile];
-  const recordPhones = phoneFields.map(value => String(value || '').replace(/\D/g, '')).filter(phone => phone.length >= 8);
-  const phoneMatches = candidates.filter(candidate => {
-    const candidatePhones = [candidate.mobile, ...(candidate.alt_phones || [])]
-      .map(value => String(value || '').replace(/\D/g, ''));
-    return recordPhones.some(phone => candidatePhones.includes(phone));
-  });
-  if (phoneMatches.length === 1) return phoneMatches[0];
+  const recordPhones = getRecordPhones(record);
+  if (recordPhones.length) {
+    const phoneMatches = candidates.filter(candidate => {
+      const candidatePhones = getCandidatePhones(candidate);
+      return recordPhones.some(phone => candidatePhones.includes(phone));
+    });
+    if (phoneMatches.length === 1) return phoneMatches[0];
+    if (phoneMatches.length > 1) {
+      const recordNames = [record.rm_name, record.bd_name, record.bd_full_name, record.salesperson_name,
+        record.sales_person_name, record.employee_name, record.executive_name]
+        .map(localNormalizeText)
+        .filter(Boolean);
+      for (const name of recordNames) {
+        const filtered = phoneMatches.filter(candidate => {
+          const candidateName = localNormalizeText(candidate.name);
+          return candidateName === name || candidateName.includes(name) || name.includes(candidateName);
+        });
+        if (filtered.length === 1) return filtered[0];
+      }
+    }
+  }
 
   const rawNames = [
     record.rm_name, record.bd_name, record.bd_full_name, record.salesperson_name,
-    record.sales_person_name, record.employee_name, record.executive_name
+    record.sales_person_name, record.employee_name, record.executive_name, record.name
   ];
   const names = rawNames
     .map(localNormalizeText)
@@ -221,7 +257,6 @@ function resolveCandidateForPayment(record, candidates) {
     });
     if (exactMatches.length === 1) return exactMatches[0];
 
-    // Partial matching is allowed only when it resolves to exactly one active person.
     const partialMatches = candidates.filter(candidate => {
       const candidateName = localNormalizeText(candidate.name);
       return name.length >= 4 && candidateName.length >= 4 &&
@@ -276,11 +311,19 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
 
   const compiledVisits = allVisits
     .map(v => {
+      const rawVisitDate = v.visit_date || v.date || v.created_on || v.visitDate || '';
+      let visit_date = formatToISODate(rawVisitDate);
       let name = (v.bd_name || '').trim();
       if (name.toLowerCase() === 'amit kumar') {
         name = 'Amit Rohilla';
       }
-      return { ...v, bd_name: name };
+      return {
+        ...v,
+        bd_name: name,
+        visit_date,
+        manager_email: String(v.manager_email || '').trim(),
+        verify_status: String(v.verify_status || 'PENDING').toUpperCase()
+      };
     })
     .filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()))
     .map(v => {
@@ -1135,10 +1178,18 @@ function localParseCSV(csvText) {
 
 
 const fetchCSVText = async (url, signal = null) => {
-  // Always proxy via /api-live to bypass CORS in dev & prod (Vercel/Netlify rewrites)
-  const target = url.replace('https://data.apnibus.com', '/api-live') + `?_cb=${Date.now()}`;
-  const res = await fetch(target, { signal });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${target}`);
+  if (import.meta.env.DEV) {
+    const targetUrl = new URL(url);
+    const proxyUrl = `/api-live${targetUrl.pathname}${targetUrl.search}`;
+    const res = await fetch(proxyUrl, { signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${proxyUrl}`);
+    return await res.text();
+  }
+
+  // Proxy through a serverless route to follow Metabase redirects and avoid CORS issues.
+  const proxyUrl = `/api/api-live?target=${encodeURIComponent(url)}&_cb=${Date.now()}`;
+  const res = await fetch(proxyUrl, { signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${proxyUrl}`);
   return await res.text();
 };
 

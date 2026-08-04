@@ -60,6 +60,10 @@ class ErrorBoundary extends Component {
   }
 }
 
+try {
+  localStorage.removeItem('apnibus_dashboard_data');
+} catch (_e) {}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>

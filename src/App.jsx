@@ -69,9 +69,19 @@ const App = () => {
     try { return JSON.parse(localStorage.getItem('apnibus_user') || 'null'); } catch { return null; }
   });
 
-  const handleLogin = useCallback((userData) => {
+  const handleLogin = useCallback(async (userData) => {
     setUser(userData);
     localStorage.setItem('apnibus_user', JSON.stringify(userData));
+    if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
+      window.__apnibus_diagnostics.fetchStatus = 'Fetching';
+      window.__apnibus_diagnostics.error = null;
+    }
+    try {
+      await fetchLiveData();
+      handleDataChanged();
+    } catch (err) {
+      console.error('Login data refresh failed:', err);
+    }
     // Auto-route manager to their own portal
     const mgrParam = EMAIL_TO_MANAGER[userData.email];
     if (mgrParam) {

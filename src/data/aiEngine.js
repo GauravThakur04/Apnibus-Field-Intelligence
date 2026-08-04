@@ -43,13 +43,22 @@ function getVisitDurationMinutes(v) {
   return 15;
 }
 
-// Helper to filter visits by timeframe
+function getCurrentDateStrings() {
+  const now = new Date();
+  const systemTodayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const currentMonth = systemTodayStr.slice(0, 7);
+  return { systemTodayStr, currentMonth };
+}
+
 function filterVisitsByTimeframe(visits, timeframe = 'MTD') {
+  const { systemTodayStr, currentMonth } = getCurrentDateStrings();
   if (timeframe === 'FTD') {
-    return visits.filter(v => v.visit_date === '2026-07-31' || v.visit_date === '2026-07-30');
+    return visits.filter(v => v.visit_date === systemTodayStr);
   }
-  // Default MTD (July 2026) - LTD now defaults to MTD as requested
-  return visits.filter(v => (v.visit_date || '').startsWith('2026-07'));
+  if (timeframe === 'MTD') {
+    return visits.filter(v => (v.visit_date || '').startsWith(currentMonth));
+  }
+  return visits;
 }
 
 // ─── BD RISK SCORE ENGINE ────────────────────────────────────────────────────
@@ -125,7 +134,8 @@ export function getBDRiskScores(managerEmail = null) {
 export function getVisitForecast(managerEmail = null) {
   return cached(`forecast_${managerEmail}`, () => {
     const { visits } = getData();
-    const activeVisits = visits.filter(v => (v.visit_date || '').startsWith('2026-07'));
+    const { systemTodayStr, currentMonth } = getCurrentDateStrings();
+    const activeVisits = visits.filter(v => (v.visit_date || '').startsWith(currentMonth));
     const relevant = managerEmail ? activeVisits.filter(v => v.manager_email === managerEmail) : activeVisits;
 
     const dayCountsMap = {};
@@ -137,8 +147,9 @@ export function getVisitForecast(managerEmail = null) {
     const sortedDates = Object.keys(dayCountsMap).sort();
     const counts = sortedDates.map(d => dayCountsMap[d]);
 
+    const today = new Date(systemTodayStr);
     const futureDates = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date('2026-07-31');
+      const d = new Date(today);
       d.setDate(d.getDate() + i + 1);
       return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
     });
@@ -207,7 +218,8 @@ export function getOperatorInsights() {
   return cached('op_insights', () => {
     const { visits, salespersons } = getData();
     const activeBDNames = new Set(salespersons.map(s => s.name.toLowerCase().trim()));
-    const scopedVisits = visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith('2026-07'));
+    const { currentMonth } = getCurrentDateStrings();
+    const scopedVisits = visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith(currentMonth));
 
     const opMap = {};
     scopedVisits.forEach(v => {
@@ -247,8 +259,9 @@ export function getAINarrativeInsights(managerEmail = null) {
   return cached(`narrative_${managerEmail}`, () => {
     const data = getData();
     const activeBDNames = new Set(data.salespersons.map(s => s.name.toLowerCase().trim()));
+    const { systemTodayStr, currentMonth } = getCurrentDateStrings();
     
-    let visits = data.visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith('2026-07'));
+    let visits = data.visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith(currentMonth));
     if (managerEmail) visits = visits.filter(v => v.manager_email === managerEmail);
 
     const spList = managerEmail ? data.salespersons.filter(s => s.manager_email === managerEmail) : data.salespersons;
@@ -261,7 +274,7 @@ export function getAINarrativeInsights(managerEmail = null) {
     const topSP    = spList.sort((a, b) => b.mtd_visits - a.mtd_visits)[0];
     const topState = states[0];
     const verRate  = visits.length > 0 ? Math.round((visits.filter(v => v.verify_status === 'SUCCESS').length / visits.length) * 100) : 86;
-    const ftdVisitsCount = visits.filter(v => v.visit_date === '2026-07-31' || v.visit_date === '2026-07-30').length;
+    const ftdVisitsCount = visits.filter(v => v.visit_date === systemTodayStr).length;
 
     const insights = [
       {
@@ -269,7 +282,7 @@ export function getAINarrativeInsights(managerEmail = null) {
         type: 'positive',
         category: 'ACTIVITY',
         confidence: 96,
-        title: `⚡ July MTD Performance: ${visits.length} Total Field Visits Logged (${ftdVisitsCount} Active Today)`,
+        title: `⚡ MTD Performance: ${visits.length} Total Field Visits Logged (${ftdVisitsCount} Active Today)`,
         description: `Team maintains an active execution velocity with ${verRate}% average verification rate across ${spList.length} field candidates.`
       },
       topSP && {
@@ -315,8 +328,9 @@ export function getTeamHealthIndex(managerEmail = null) {
   return cached(`health_${managerEmail}`, () => {
     const data = getData();
     const activeBDNames = new Set(data.salespersons.map(s => s.name.toLowerCase().trim()));
+    const { currentMonth } = getCurrentDateStrings();
     
-    let visits = data.visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith('2026-07'));
+    let visits = data.visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith(currentMonth));
     let sps = data.salespersons;
 
     if (managerEmail) {
@@ -388,8 +402,9 @@ export function getActivityHeatmap(managerEmail = null) {
   return cached(`heatmap_${managerEmail}`, () => {
     const { visits, salespersons } = getData();
     const activeBDNames = new Set(salespersons.map(s => s.name.toLowerCase().trim()));
+    const { currentMonth } = getCurrentDateStrings();
     
-    let relevant = visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith('2026-07'));
+    let relevant = visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()) && (v.visit_date || '').startsWith(currentMonth));
     if (managerEmail) relevant = relevant.filter(v => v.manager_email === managerEmail);
 
     const bds = [...new Set(relevant.map(v => v.bd_name))].slice(0, 12);

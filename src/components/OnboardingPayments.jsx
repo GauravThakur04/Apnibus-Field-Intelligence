@@ -12,27 +12,68 @@ const OnboardingPayments = ({ theme }) => {
   const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const DYNAMIC_MTD_MONTH = systemTodayStr.slice(0, 7);
 
+  const normalizeText = (value) => String(value || '').toLowerCase().trim();
+  const normalizePhone = (value) => String(value || '').replace(/\D/g, '').replace(/^0+/, '').trim();
+  const formatOrderDate = (record) => {
+    if (record.created_on) return record.created_on.slice(0, 10);
+    if (record.order_date) {
+      const parsed = new Date(record.order_date);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      }
+    }
+    return '';
+  };
 
-  // Collect ALL punched_orders from all salespersons (sales + onboarding — same revenue data)
   const allOrders = useMemo(() => {
     const orders = [];
     const seen = new Set();
-    (allData.salespersons || []).forEach(sp => {
-      if (!Array.isArray(sp.punched_orders)) return;
-      sp.punched_orders.forEach(o => {
-        // Deduplicate by order_id so union entries are not double-counted
-        const key = o.order_id ? String(o.order_id) : `${o.date}|${o.payable_amount}|${sp.name}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        orders.push({
-          ...o,
-          bd_name: sp.name,
-          bd_role: sp.role || 'BD',
-          manager_email: sp.manager_email,
-          manager_name: sp.manager_name || '',
-        });
+    const candidates = (allData.salespersons || []).map(sp => ({
+      name: normalizeText(sp.name),
+      phones: new Set([normalizePhone(sp.mobile), normalizePhone(sp.bd_code), ...(sp.alt_phones || []).map(normalizePhone)].filter(Boolean)),
+      manager_email: sp.manager_email,
+      manager_name: sp.manager_name,
+      role: sp.role || 'BD',
+      id: sp.id,
+    }));
+
+    const findCandidate = (record) => {
+      const recordPhones = [record.bd_code, record.mobile, record.bd_mobile, record.operator_mobile_no]
+        .map(normalizePhone).filter(Boolean);
+      if (recordPhones.length) {
+        const phoneMatch = candidates.find(c => recordPhones.some(p => c.phones.has(p)));
+        if (phoneMatch) return phoneMatch;
+      }
+      const recordNames = [record.bd_name, record.rm_name, record.operator_name, record.company_name]
+        .map(normalizeText).filter(Boolean);
+      if (recordNames.length) {
+        const nameMatch = candidates.find(c => recordNames.some(name => c.name === name || c.name.includes(name) || name.includes(c.name)));
+        if (nameMatch) return nameMatch;
+      }
+      return null;
+    };
+
+    const rawOnboarding = Array.isArray(allData._rawOnboarding) ? allData._rawOnboarding : [];
+    rawOnboarding.forEach(record => {
+      const candidate = findCandidate(record);
+      const date = formatOrderDate(record);
+      const key = record.order_id ? String(record.order_id) : `${date}|${record.payable_amount}|${record.operator_name}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      orders.push({
+        ...record,
+        date,
+        bd_name: candidate?.name || record.rm_name || record.bd_name || 'Unmapped',
+        bd_role: candidate?.role || 'Unknown',
+        manager_email: candidate?.manager_email || '',
+        manager_name: candidate?.manager_name || '',
+        payable_amount: parseFloat(record.payable_amount || record.wallet_amount || 0) || 0,
+        setup_fee: parseFloat(record.setup_fee || 0) || 0,
+        wallet_amount: parseFloat(record.wallet_amount || 0) || 0,
+        num_items: parseInt(record.num_items || 1, 10) || 1,
       });
     });
+
     return orders.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }, [allData]);
 
