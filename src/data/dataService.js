@@ -136,6 +136,12 @@ const CANDIDATE_NAME_ALIASES = {
 };
 
 function recordMatchesCandidate(record, candidate) {
+  // Match by email first (most reliable for attendance CSV)
+  if (candidate.email && record.email) {
+    const cEmail = String(candidate.email).toLowerCase().trim();
+    const rEmail = String(record.email).toLowerCase().trim();
+    if (cEmail && rEmail && cEmail === rEmail) return true;
+  }
   const candidateName = localNormalizeText(candidate.name);
   const recordName = localNormalizeText(record.bd_name || record.name || record.employee_name || record.full_name || record.user_name);
   if (!recordName) return false;
@@ -487,7 +493,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-04-attendance-and-gps-v19';
+const DATA_MAPPING_VERSION = '2026-08-04-rm-sales-email-match-v20';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -677,6 +683,61 @@ export const getStats = (filters = {}) => {
     activeToday, avgVisitsPerCandidate, coverageCities, totalDistance, latestDate,
     totalFtdSales, totalFtdRevenue, totalMtdSales, totalMtdRevenue, avgAttendance
   };
+};
+
+// ─── RM COMBINED SALES ────────────────────────────────────────────────────────
+// Sales with bd_code = '1' are punched by RMs (Regional Managers), not by individual BDs.
+// These are tracked separately as "Combined RM Sales".
+export const getRMCombinedSales = () => {
+  const rawSales = currentData._rawSales || [];
+  const rawOnboarding = currentData._rawOnboarding || [];
+  const allRecords = [...rawSales, ...rawOnboarding];
+  const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const currentMonth = systemTodayStr.slice(0, 7);
+
+  const rmRecords = allRecords.filter(r => {
+    if (String(r.payment_status || '').toUpperCase() === 'C') return false;
+    return String(r.bd_code || '').trim() === '1';
+  });
+
+  // Deduplicate by order_id
+  const seen = new Set();
+  const unique = rmRecords.filter(r => {
+    const key = r.order_id || `${r.created_on}|${r.payable_amount}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  let ftdCount = 0, ftdRevenue = 0, mtdCount = 0, mtdRevenue = 0, ltdCount = 0, ltdRevenue = 0;
+  const orders = [];
+
+  unique.forEach(r => {
+    const amount = parseFloat(r.payable_amount || r.wallet_amount || 0) || 0;
+    const dateStr = formatToISODate(r.created_on || r.order_date || '');
+    const qty = parseInt(r.num_items || 1, 10) || 1;
+    ltdCount += qty;
+    ltdRevenue += amount;
+    if (dateStr.startsWith(currentMonth)) {
+      mtdCount += qty;
+      mtdRevenue += amount;
+      if (dateStr === systemTodayStr) {
+        ftdCount += qty;
+        ftdRevenue += amount;
+      }
+    }
+    orders.push({
+      order_id: r.order_id,
+      date: dateStr,
+      time: (r.created_on || '').slice(11, 19),
+      operator_name: r.operator_name || 'N/A',
+      company_name: r.company_name || 'N/A',
+      payable_amount: amount,
+      state: r.operator_state || r.bd_state || 'N/A'
+    });
+  });
+
+  return { ftdCount, ftdRevenue, mtdCount, mtdRevenue, ltdCount, ltdRevenue, orders };
 };
 
 // Role-level metrics are shared by the Head and each manager portal, so both views use identical definitions.

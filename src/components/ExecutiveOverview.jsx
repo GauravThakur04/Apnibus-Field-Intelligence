@@ -3,7 +3,7 @@ import ReactApexChart from 'react-apexcharts';
 import {
   Brain, Sparkles, ChevronRight, ArrowRight
 } from 'lucide-react';
-import { getStats, getVisitsTrend, getRoleMetrics } from '../data/dataService';
+import { getStats, getVisitsTrend, getRoleMetrics, getRMCombinedSales } from '../data/dataService';
 import {
   getVisitForecast, getAINarrativeInsights, getTeamHealthIndex,
   getStatePerformance, getHourlyDistribution, getBDRiskScores
@@ -52,6 +52,7 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
   const hourly   = getHourlyDistribution(filters.managerEmail, distTimeframe);
   const riskScores = getBDRiskScores(filters.managerEmail);
   const roleMetrics = getRoleMetrics(filters);
+  const rmSales = getRMCombinedSales();
 
   const isDark = theme === 'dark';
   const tc = isDark ? '#94a3b8' : '#64748b';
@@ -185,7 +186,7 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
         </div>
       </div>
 
-      <HeadPerformanceView metrics={roleMetrics} stats={stats} />
+      <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} />
 
       {/* Main 3-col layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
