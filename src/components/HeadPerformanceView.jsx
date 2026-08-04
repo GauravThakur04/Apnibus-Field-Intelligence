@@ -80,8 +80,6 @@ const HeadPerformanceView = ({ metrics, stats, rmSales }) => {
               ['FTD Revenue', money(rm.ftdRevenue)],
               ['MTD Sales', rm.mtdCount],
               ['MTD Revenue', money(rm.mtdRevenue)],
-              ['LTD Sales', rm.ltdCount || 0],
-              ['LTD Revenue', money(rm.ltdRevenue || 0)],
             ].map(([label, value]) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '9px 0', borderBottom: '1px solid var(--border)', fontSize: 11 }}>
                 <span style={{ color: 'var(--text-muted)' }}>{label}</span><strong style={{ color: 'var(--text-heading)', textAlign: 'right' }}>{value}</strong>
