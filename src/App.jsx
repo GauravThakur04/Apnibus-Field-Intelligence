@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ExecutiveOverview from './components/ExecutiveOverview';
 import ManagerPerformance from './components/ManagerPerformance';
@@ -12,7 +12,7 @@ import RedAlertDashboard from './components/RedAlertDashboard';
 import ManagerTeamDashboard from './components/ManagerTeamDashboard';
 import IndividualBDDashboard from './components/IndividualBDDashboard';
 import OnboardingPayments from './components/OnboardingPayments';
-import { Menu, Sun, Moon } from 'lucide-react';
+import { Menu, Sun, Moon, RefreshCw } from 'lucide-react';
 import { getData, fetchLiveData } from './data/dataService';
 
 const MGR_EMAIL_MAP = {
@@ -51,8 +51,33 @@ const App = () => {
   const [fetchError, setFetchError] = useState(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const [secondsAgo, setSecondsAgo] = useState(0);
+  const refreshTimerRef = useRef(null);
+  const countupRef = useRef(null);
 
   const allData = useMemo(() => getData(), [dataVersion]);
+
+  // ── Refresh handler: clear cache + re-fetch all live CSVs ──
+  const handleManualRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setFetchError(null);
+    try {
+      // Clear stale localStorage cache so we always get genuinely fresh data
+      try { localStorage.removeItem('apnibus_dashboard_data'); } catch (_) {}
+      await fetchLiveData();
+      handleDataChanged();
+      setLastRefreshed(new Date());
+      setSecondsAgo(0);
+    } catch (err) {
+      console.error('Refresh failed:', err);
+      setFetchError(err.message || String(err));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshing]);
 
   // Fetch live CSV data on mount
   useEffect(() => {
@@ -60,6 +85,7 @@ const App = () => {
       try {
         await fetchLiveData();
         handleDataChanged();
+        setLastRefreshed(new Date());
       } catch (err) {
         console.error("Mount live fetch failed:", err);
         setFetchError(err.message || String(err));
@@ -72,6 +98,30 @@ const App = () => {
   useEffect(() => {
     setSidebarOpen(false);
   }, [activeTab]);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    refreshTimerRef.current = setInterval(() => {
+      handleManualRefresh();
+    }, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(refreshTimerRef.current);
+  }, [handleManualRefresh]);
+
+  // Live "X ago" counter updates every second
+  useEffect(() => {
+    countupRef.current = setInterval(() => {
+      if (lastRefreshed) {
+        setSecondsAgo(Math.floor((Date.now() - lastRefreshed.getTime()) / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(countupRef.current);
+  }, [lastRefreshed]);
+
+  const formatAgo = (secs) => {
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+    return `${Math.floor(secs / 3600)}h ago`;
+  };
 
   // Derived Manager ID and Email based on active URL parameter
   const activeManagerId = useMemo(() => {
@@ -202,9 +252,20 @@ const App = () => {
           <img src="/logo.png" alt="ApniBus Logo" style={{ height: 26, width: 'auto', objectFit: 'contain' }} />
           <span style={{ fontFamily: 'var(--font-header)', fontWeight: 800, fontSize: 15, color: 'var(--text-heading)' }}>ApniBus</span>
         </div>
-        <button className="mobile-header-btn" onClick={toggleTheme}>
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            className="mobile-header-btn"
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            title="Refresh live data"
+            style={{ color: refreshing ? '#10b981' : undefined }}
+          >
+            <RefreshCw size={17} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
+          <button className="mobile-header-btn" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+        </div>
       </header>
 
       {/* Mobile Sidebar Backdrop Overlay */}
@@ -263,68 +324,56 @@ const App = () => {
         onDataChanged={handleDataChanged}
       />
 
-      {/* Floating Diagnostics Button & Panel */}
-      <div style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 9999, fontFamily: 'monospace' }}>
+      {/* Floating Refresh Button */}
+      <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
         <button
-          onClick={() => setDiagnosticsOpen(prev => !prev)}
+          onClick={handleManualRefresh}
+          disabled={refreshing}
+          title="Refresh all live data from Metabase"
           style={{
-            background: '#1e293b',
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: refreshing
+              ? 'linear-gradient(135deg, #059669, #10b981)'
+              : 'linear-gradient(135deg, #1e293b, #334155)',
             color: '#f8fafc',
             border: 'none',
-            padding: '8px 12px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontSize: 12,
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6
+            padding: '10px 16px',
+            borderRadius: 50,
+            cursor: refreshing ? 'not-allowed' : 'pointer',
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: 'var(--font-body)',
+            boxShadow: refreshing
+              ? '0 4px 20px rgba(16,185,129,0.4)'
+              : '0 4px 14px rgba(0,0,0,0.25)',
+            transition: 'all 0.3s ease',
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.01em'
           }}
         >
-          🔧 Diagnostics Console
+          <RefreshCw
+            size={15}
+            style={{
+              animation: refreshing ? 'spin 0.8s linear infinite' : 'none',
+              flexShrink: 0
+            }}
+          />
+          {refreshing ? 'Refreshing…' : 'Refresh Data'}
         </button>
-        {diagnosticsOpen && (() => {
-          const diag = window.__apnibus_diagnostics || {};
-          return (
-            <div style={{
-              position: 'absolute',
-              bottom: 40,
-              right: 0,
-              background: '#0f172a',
-              color: '#38bdf8',
-              border: '1px solid #334155',
-              borderRadius: 8,
-              padding: 16,
-              width: 320,
-              maxHeight: 400,
-              overflowY: 'auto',
-              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)',
-              fontSize: 11,
-              lineHeight: 1.5
-            }}>
-              <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid #334155', paddingBottom: 4, color: '#f8fafc' }}>
-                System Diagnostics
-              </h3>
-              <div><strong>Status:</strong> <span style={{ color: diag.fetchStatus === 'Success' ? '#4ade80' : diag.fetchStatus === 'Failed' ? '#f87171' : '#fbbf24' }}>{diag.fetchStatus}</span></div>
-              <div><strong>System Time:</strong> {new Date().toISOString()}</div>
-              <div><strong>System Date:</strong> {diag.systemTodayStr}</div>
-              <div><strong>Today String:</strong> {diag.DYNAMIC_TODAY_DATE}</div>
-              <div><strong>MTD Month:</strong> {diag.DYNAMIC_MTD_MONTH}</div>
-              <div style={{ margin: '8px 0', borderBottom: '1px solid #1e293b' }} />
-              <div><strong>Onboarding CSV Rows:</strong> {diag.onboardingCount}</div>
-              <div><strong>Sales CSV Rows:</strong> {diag.salesCount}</div>
-              <div><strong>Visits CSV Rows:</strong> {diag.visitsCount}</div>
-              <div><strong>Tracked Candidates:</strong> {diag.MASTER_CANDIDATES_COUNT}</div>
-              <div style={{ margin: '8px 0', borderBottom: '1px solid #1e293b' }} />
-              <div><strong>Last Updated:</strong> {diag.lastUpdated || 'Never'}</div>
-              {diag.error && (
-                <div style={{ color: '#f87171', marginTop: 8, wordBreak: 'break-all' }}>
-                  <strong>Error:</strong> {diag.error}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {lastRefreshed && !refreshing && (
+          <div style={{
+            background: 'rgba(15,23,42,0.82)',
+            color: '#94a3b8',
+            fontSize: 11,
+            fontWeight: 600,
+            padding: '4px 12px',
+            borderRadius: 20,
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.08)'
+          }}>
+            ✓ Updated {formatAgo(secondsAgo)} · auto-refresh in {Math.max(0, 300 - secondsAgo % 300)}s
+          </div>
+        )}
       </div>
     </div>
   );
