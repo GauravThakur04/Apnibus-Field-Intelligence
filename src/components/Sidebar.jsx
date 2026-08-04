@@ -1,10 +1,10 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, UserCheck, Map, Table2,
-  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft, X, DollarSign
+  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft, X, DollarSign, LogOut
 } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, currentManagerParam, sidebarOpen, setSidebarOpen }) => {
+const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, currentManagerParam, sidebarOpen, setSidebarOpen, user, onLogout }) => {
 
   const managerNav = [
     { id: 'mgr_rajnish',   label: 'Rajnish Kumar',   subtitle: 'Rajasthan & Jharkhand', param: 'rajnish',   color: '#2563eb' },
@@ -155,6 +155,31 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
 
       {/* Footer Controls */}
       <div className="sidebar-footer">
+        {/* User info */}
+        {user && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 12px', marginBottom: 6,
+            background: 'var(--bg-input)', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border)'
+          }}>
+            {user.picture ? (
+              <img src={user.picture} alt={user.name} style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                {(user.given_name || user.name || 'U')[0].toUpperCase()}
+              </div>
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-heading)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.given_name || user.name?.split(' ')[0]}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.email}
+              </div>
+            </div>
+          </div>
+        )}
         <button className="sidebar-footer-btn" onClick={onOpenConfig}>
           <Database size={14} />
           <span>Data Sources</span>
@@ -163,6 +188,16 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
           {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
         </button>
+        {user && onLogout && (
+          <button
+            className="sidebar-footer-btn"
+            onClick={onLogout}
+            style={{ color: '#f43f5e', borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 10 }}
+          >
+            <LogOut size={14} />
+            <span>Sign Out</span>
+          </button>
+        )}
       </div>
     </aside>
   );

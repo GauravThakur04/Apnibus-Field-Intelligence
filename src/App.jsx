@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Sidebar from './components/Sidebar';
+import LoginPage from './components/LoginPage';
 import ExecutiveOverview from './components/ExecutiveOverview';
 import ManagerPerformance from './components/ManagerPerformance';
 import CandidateLeaderboard from './components/CandidateLeaderboard';
@@ -14,6 +16,17 @@ import IndividualBDDashboard from './components/IndividualBDDashboard';
 import OnboardingPayments from './components/OnboardingPayments';
 import { Menu, Sun, Moon, RefreshCw } from 'lucide-react';
 import { getData, fetchLiveData } from './data/dataService';
+
+const GOOGLE_CLIENT_ID = '912392915264-fi7j1e93plf2qp338q2b4vca4fp6lm2j.apps.googleusercontent.com';
+
+// Email -> manager param mapping
+const EMAIL_TO_MANAGER = {
+  'rajnish.kumar@apnibus.com':   'rajnish',
+  'tarun.kumar@apnibus.com':     'tarun',
+  'sonu.mishra@apnibus.com':     'sonu',
+  'rajwinder.singh@apnibus.com': 'rajwinder',
+};
+
 
 const MGR_EMAIL_MAP = {
   201: 'rajnish.kumar@apnibus.com',
@@ -51,6 +64,31 @@ const App = () => {
   const [fetchError, setFetchError] = useState(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // ── Auth state (persisted in localStorage) ──
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('apnibus_user') || 'null'); } catch { return null; }
+  });
+
+  const handleLogin = useCallback((userData) => {
+    setUser(userData);
+    localStorage.setItem('apnibus_user', JSON.stringify(userData));
+    // Auto-route manager to their own portal
+    const mgrParam = EMAIL_TO_MANAGER[userData.email];
+    if (mgrParam) {
+      setActiveTab(`mgr_${mgrParam}`);
+      setCurrentMgrParam(mgrParam);
+    } else {
+      setActiveTab('overview');
+    }
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    setUser(null);
+    localStorage.removeItem('apnibus_user');
+    setActiveTab('overview');
+    setCurrentMgrParam(null);
+  }, []);
+
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
@@ -241,6 +279,11 @@ const App = () => {
     }
   };
 
+  // Show login page if not authenticated
+  if (!user) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className={`app-container ${sidebarOpen ? 'sidebar-open' : ''}`}>
       {/* Mobile Top Header Bar */}
@@ -282,6 +325,8 @@ const App = () => {
         currentManagerParam={currentMgrParam}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        user={user}
+        onLogout={handleLogout}
       />
       <main className="main-content">
         {fetchError && (
@@ -379,4 +424,10 @@ const App = () => {
   );
 };
 
-export default App;
+const AppWithAuth = () => (
+  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <App />
+  </GoogleOAuthProvider>
+);
+
+export default AppWithAuth;
