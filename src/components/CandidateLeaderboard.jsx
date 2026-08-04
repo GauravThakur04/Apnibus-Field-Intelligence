@@ -13,7 +13,6 @@ const CandidateLeaderboard = ({ selectedManagerId, setSelectedManagerId, onSelec
     { label: 'Candidates', value: stats.totalCandidates, icon: UserCheck, color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
     { label: "Today's Visits", value: stats.todayVisits, icon: Flame, color: '#f43f5e', bg: 'rgba(244,63,94,0.08)' },
     { label: 'MTD Visits', value: stats.mtdVisits.toLocaleString(), icon: Zap, color: '#2563eb', bg: 'rgba(37,99,235,0.08)' },
-    { label: 'Avg Verified %', value: `${stats.verificationRate}%`, icon: Percent, color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
   ];
 
   return (
@@ -35,7 +34,7 @@ const CandidateLeaderboard = ({ selectedManagerId, setSelectedManagerId, onSelec
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
         {kpis.map((k, i) => {
           const Icon = k.icon;
           return (

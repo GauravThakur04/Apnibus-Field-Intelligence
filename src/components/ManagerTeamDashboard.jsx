@@ -5,9 +5,10 @@ import {
   ShieldCheck, Shield, ChevronRight, Search, Flame, ArrowRight, UserCheck, Calendar, Filter,
   DollarSign, TrendingUp, Briefcase, Zap, Clock
 } from 'lucide-react';
-import { getData, getStats, getVisitsTrend } from '../data/dataService';
+import { getData, getStats, getVisitsTrend, getRoleMetrics } from '../data/dataService';
 import { getBDRiskScores, getVisitForecast, getAINarrativeInsights, getTeamHealthIndex } from '../data/aiEngine';
 import IndividualBDDashboard from './IndividualBDDashboard';
+import RoleKpiMatrix from './RoleKpiMatrix';
 
 const MANAGER_CONFIGS = {
   'rajnish.kumar@apnibus.com': {
@@ -139,31 +140,17 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
 
   const teamAvgAttendance = useMemo(() => {
     if (customDate || timeframe === 'FTD') {
-      const targetDate = customDate || DYNAMIC_TODAY_DATE;
-      const presentCount = mgrBDs.filter(s => {
-        const hasVisits = mgrVisits.some(v => v.visit_date === targetDate && String(v.bd_name || '').toLowerCase().trim() === String(s.name || '').toLowerCase().trim());
-        const hasOrders = teamOrders.some(o => o.date === targetDate && String(o.bd_name || '').toLowerCase().trim() === String(s.name || '').toLowerCase().trim());
-        return hasVisits || hasOrders;
-      }).length;
+      const presentCount = mgrBDs.filter(s => s.attendance_status === 'Present').length;
       if (!mgrBDs.length) return 0;
       return Math.round((presentCount / mgrBDs.length) * 100);
     }
-    if (!mgrBDs.length) return 85;
-    return Math.round(mgrBDs.reduce((acc, s) => acc + (s.attendance_rate || 85), 0) / mgrBDs.length);
-  }, [mgrBDs, mgrVisits, teamOrders, timeframe, customDate, DYNAMIC_TODAY_DATE]);
+    if (!mgrBDs.length) return 0;
+    return Math.round(mgrBDs.reduce((acc, s) => acc + (s.mtd_attendance_pct || 0), 0) / mgrBDs.length);
+  }, [mgrBDs, timeframe, customDate]);
 
   const activeBdsCount = useMemo(() => {
-    const activeNames = new Set();
-    filteredVisits.forEach(v => {
-      const name = String(v.bd_name || '').toLowerCase().trim();
-      if (name) activeNames.add(name);
-    });
-    filteredOrders.forEach(o => {
-      const name = String(o.bd_name || '').toLowerCase().trim();
-      if (name) activeNames.add(name);
-    });
-    return activeNames.size;
-  }, [filteredVisits, filteredOrders]);
+    return mgrBDs.filter(s => s.attendance_status === 'Present').length;
+  }, [mgrBDs]);
 
   const stats = useMemo(() => {
     const mgrObj = (allData?.managers || []).find(m => m && m.email === managerEmail);
@@ -174,6 +161,11 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
       activeToday: activeBdsCount
     };
   }, [managerEmail, allData, filteredVisits, DYNAMIC_TODAY_DATE, activeBdsCount]);
+
+  const roleMetrics = useMemo(() => {
+    const mgrObj = (allData?.managers || []).find(m => m?.email === managerEmail);
+    return getRoleMetrics({ managerId: mgrObj?.id });
+  }, [allData, managerEmail]);
 
   const trend = useMemo(() => {
     const mgrObj = (allData?.managers || []).find(m => m && m.email === managerEmail);
@@ -447,7 +439,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
             icon: Activity, color: cfg.color, bg: cfg.light 
           },
           { 
-            label: customDate ? 'Active BDs (Date)' : timeframe === 'FTD' ? 'Active Today' : timeframe === 'LTD' ? 'Active BDs (LTD)' : 'Active BDs (MTD)', 
+            label: 'Day Started Today',
             val: `${activeBdsCount} / ${mgrBDs.length}`, 
             icon: Users, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' 
           },
@@ -466,6 +458,8 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
           );
         })}
       </div>
+
+      <RoleKpiMatrix metrics={roleMetrics} scope={`${cfg.name}'s team`} />
 
       {/* Team Member BD Grid */}
       <div className="card" style={{ padding: '20px 24px' }}>

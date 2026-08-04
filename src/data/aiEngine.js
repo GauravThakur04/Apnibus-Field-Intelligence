@@ -140,7 +140,7 @@ export function getVisitForecast(managerEmail = null) {
     const futureDates = Array.from({ length: 7 }, (_, i) => {
       const d = new Date('2026-07-31');
       d.setDate(d.getDate() + i + 1);
-      return d.toISOString().slice(5, 10);
+      return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
     });
 
     if (counts.length < 3) {

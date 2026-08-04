@@ -1,16 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import {
-  TrendingUp, TrendingDown, Users, Activity, CheckCircle,
-  MapPin, Route, Zap, Brain, Sparkles, ChevronRight, ArrowRight,
-  DollarSign, Briefcase, UserCheck
+  Brain, Sparkles, ChevronRight, ArrowRight
 } from 'lucide-react';
-import { getStats, getVisitsTrend, getVisitsByCity } from '../data/dataService';
+import { getStats, getVisitsTrend, getRoleMetrics } from '../data/dataService';
 import {
   getVisitForecast, getAINarrativeInsights, getTeamHealthIndex,
   getStatePerformance, getHourlyDistribution, getBDRiskScores
 } from '../data/aiEngine';
 import BDRankingLeaderboard from './BDRankingLeaderboard';
+import HeadPerformanceView from './HeadPerformanceView';
 
 /* ─── AI insight category colors ─── */
 const CAT_STYLE = {
@@ -39,22 +38,6 @@ const AIInsightCard = ({ insight }) => {
   );
 };
 
-const KpiTile = ({ label, value, delta, deltaUp, icon: Icon, color, bg, delay }) => (
-  <div className="kpi-tile" style={{ animationDelay: `${delay || 0}s`, '--kpi-color': color, background: 'var(--bg-card)', border: '1px solid var(--border)', borderTop: `3px solid ${color}` }}>
-    <div style={{ width: 38, height: 38, borderRadius: 9, background: bg, color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-      <Icon size={16} />
-    </div>
-    <div className="kpi-label">{label}</div>
-    <div className="kpi-value" style={{ fontSize: 24, color: 'var(--text-heading)' }}>{value}</div>
-    {delta && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: deltaUp ? '#10b981' : '#f59e0b', marginTop: 6 }}>
-        {deltaUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-        {delta}
-      </div>
-    )}
-  </div>
-);
-
 const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
   const [clickedStatus, setClickedStatus] = useState(null);
   const [clickedState, setClickedState]   = useState(null);
@@ -68,6 +51,7 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
   const states   = getStatePerformance(filters.managerEmail, distTimeframe);
   const hourly   = getHourlyDistribution(filters.managerEmail, distTimeframe);
   const riskScores = getBDRiskScores(filters.managerEmail);
+  const roleMetrics = getRoleMetrics(filters);
 
   const isDark = theme === 'dark';
   const tc = isDark ? '#94a3b8' : '#64748b';
@@ -201,22 +185,7 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
         </div>
       </div>
 
-      {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9, 1fr)', gap: 10 }}>
-        {[
-          { label: 'Total BDs',          value: stats.totalCandidates,             icon: Users,         color: '#2563eb', bg: 'rgba(37,99,235,0.08)',  delay: 0.05 },
-          { label: 'FTD Sales',          value: (stats.totalFtdSales || 0).toLocaleString(), icon: Briefcase, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', delay: 0.1 },
-          { label: 'FTD Revenue',        value: stats.totalFtdRevenue >= 100000 ? `₹ ${(stats.totalFtdRevenue / 100000).toFixed(1)} L` : `₹ ${(stats.totalFtdRevenue / 1000).toFixed(1)}k`, icon: DollarSign, color: '#10b981', bg: 'rgba(16,185,129,0.08)', delay: 0.15 },
-          { label: 'MTD Sales Punches',  value: (stats.totalMtdSales || 0).toLocaleString(), icon: Briefcase, color: '#e11d48', bg: 'rgba(225,29,72,0.08)',  delay: 0.2 },
-          { label: 'MTD Revenue',        value: stats.totalMtdRevenue >= 100000 ? `₹ ${(stats.totalMtdRevenue / 100000).toFixed(1)} L` : `₹ ${(stats.totalMtdRevenue / 1000).toFixed(1)}k`, icon: DollarSign, color: '#059669', bg: 'rgba(5,150,105,0.08)', delay: 0.25 },
-          { label: 'MTD Visits',          value: stats.mtdVisits.toLocaleString(),  icon: Activity,      color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)', delay: 0.3 },
-          { label: 'Cities Covered',      value: stats.coverageCities,              icon: MapPin,        color: '#7c3aed', bg: 'rgba(124,58,237,0.08)', delay: 0.35 },
-          { label: 'Active Today',        value: stats.activeToday,                 icon: Zap,           color: '#3b82f6', bg: 'rgba(59,130,246,0.08)', delay: 0.4 },
-          { label: 'Avg Attendance',      value: '86.4%',                           icon: UserCheck,     color: '#64748b', bg: 'rgba(100,116,139,0.08)', delay: 0.45,  delta: '9.4 hrs avg field time', deltaUp: true },
-        ].map((k, i) => (
-          <KpiTile key={i} {...k} />
-        ))}
-      </div>
+      <HeadPerformanceView metrics={roleMetrics} stats={stats} />
 
       {/* Main 3-col layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>

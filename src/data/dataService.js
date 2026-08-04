@@ -74,6 +74,8 @@ if (typeof window !== 'undefined') {
     error: null,
     onboardingCount: 0,
     salesCount: 0,
+    attendanceCount: 0,
+    locationCount: 0,
     visitsCount: 0,
     lastUpdated: null,
     MASTER_CANDIDATES_COUNT: MASTER_CANDIDATES.length
@@ -94,6 +96,9 @@ function localNormalizeText(value) {
 function formatToISODate(dateVal) {
   if (!dateVal) return '';
   const val = String(dateVal).trim();
+  // Common CSV export format: DD/MM/YYYY (optionally followed by a time).
+  const slashMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (slashMatch) return `${slashMatch[3]}-${slashMatch[2].padStart(2, '0')}-${slashMatch[1].padStart(2, '0')}`;
   // Case 1: YYYY-MM-DD ...
   if (val.match(/^\d{4}-\d{2}-\d{2}/)) {
     return val.slice(0, 10);
@@ -123,6 +128,45 @@ function formatToISODate(dateVal) {
   return val.slice(0, 10);
 }
 
+const CANDIDATE_NAME_ALIASES = {
+  'amit rohilla': ['amit kumar'],
+  'neeraj shrivastav': ['neeraj shrivastava'],
+  'manish bhati': ['manish bathi'],
+  'sandip kumar': ['sandeep kumar'],
+};
+
+function recordMatchesCandidate(record, candidate) {
+  const candidateName = localNormalizeText(candidate.name);
+  const recordName = localNormalizeText(record.bd_name || record.name || record.employee_name || record.full_name || record.user_name);
+  if (!recordName) return false;
+  if (recordName === candidateName) return true;
+  if ((CANDIDATE_NAME_ALIASES[candidateName] || []).includes(recordName)) return true;
+  // Some exports shorten a middle name. Keep this guarded to avoid matching short names.
+  return recordName.length >= 7 && candidateName.length >= 7 &&
+    (recordName.includes(candidateName) || candidateName.includes(recordName));
+}
+
+function formatAttendanceTime(value) {
+  if (!value) return '';
+  const text = String(value).trim();
+  const match = text.match(/(?:T|\s)(\d{1,2}:\d{2}(?::\d{2})?)/) || text.match(/^(\d{1,2}:\d{2}(?::\d{2})?)/);
+  if (!match) return text;
+  const [hour, minute] = match[1].split(':').map(Number);
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
+
+function getWorkingDaysElapsed(isoDate) {
+  const [year, month, day] = String(isoDate || '').split('-').map(Number);
+  if (!year || !month || !day) return 0;
+  let total = 0;
+  for (let d = 1; d <= day; d += 1) {
+    const weekday = new Date(year, month - 1, d).getDay();
+    if (weekday !== 0) total += 1;
+  }
+  return total;
+}
+
 function matchesCandidateLocal(record, candidate, aliases) {
   const status = String(record.payment_status || record.paymentStatus || '').toUpperCase();
   if (status === 'C') return false;
@@ -146,12 +190,53 @@ function matchesCandidateLocal(record, candidate, aliases) {
   return aliases.includes(recordName);
 }
 
-function sumOrdersLocal(records, candidate, aliases, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE) {
+function resolveCandidateForPayment(record, candidates) {
+  const phoneFields = [record.bd_code, record.bd_id, record.bd_mobile, record.rm_mobile, record.employee_mobile];
+  const recordPhones = phoneFields.map(value => String(value || '').replace(/\D/g, '')).filter(phone => phone.length >= 8);
+  const phoneMatches = candidates.filter(candidate => {
+    const candidatePhones = [candidate.mobile, ...(candidate.alt_phones || [])]
+      .map(value => String(value || '').replace(/\D/g, ''));
+    return recordPhones.some(phone => candidatePhones.includes(phone));
+  });
+  if (phoneMatches.length === 1) return phoneMatches[0];
+
+  const rawNames = [
+    record.rm_name, record.bd_name, record.bd_full_name, record.salesperson_name,
+    record.sales_person_name, record.employee_name, record.executive_name
+  ];
+  const names = rawNames
+    .map(localNormalizeText)
+    .filter(name => name && !['unmapped', 'na', 'n a', 'null'].includes(name));
+
+  for (const name of names) {
+    const exactMatches = candidates.filter(candidate => {
+      const candidateName = localNormalizeText(candidate.name);
+      return candidateName === name || (CANDIDATE_NAME_ALIASES[candidateName] || []).includes(name);
+    });
+    if (exactMatches.length === 1) return exactMatches[0];
+
+    // Partial matching is allowed only when it resolves to exactly one active person.
+    const partialMatches = candidates.filter(candidate => {
+      const candidateName = localNormalizeText(candidate.name);
+      return name.length >= 4 && candidateName.length >= 4 &&
+        (candidateName.includes(name) || name.includes(candidateName));
+    });
+    if (partialMatches.length === 1) return partialMatches[0];
+  }
+  return null;
+}
+
+function sumOrdersLocal(records, candidate, aliases, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE, candidateResolver) {
   const totals = { ftdCount: 0, ftdRevenue: 0, mtdCount: 0, mtdRevenue: 0, ltdCount: 0, ltdRevenue: 0 };
   const matched = [];
 
   records.forEach((record) => {
-    if (!matchesCandidateLocal(record, candidate, aliases)) return;
+    if (String(record.payment_status || record.paymentStatus || '').toUpperCase() === 'C') return;
+    // Resolve once across the whole active team. This prevents an abbreviated name from
+    // being attributed to more than one BD while still supporting safe partial matches.
+    const resolvedCandidate = candidateResolver?.(record);
+    if (candidateResolver && (!resolvedCandidate || resolvedCandidate.id !== candidate.id)) return;
+    if (!candidateResolver && !matchesCandidateLocal(record, candidate, aliases)) return;
 
     const amount = parseFloat(record.payable_amount || record.wallet_amount || record.amount || 0) || 0;
     const dateStr = formatToISODate(record.created_on || record.order_date || '');
@@ -176,9 +261,10 @@ function sumOrdersLocal(records, candidate, aliases, DYNAMIC_MTD_MONTH, DYNAMIC_
   return { ...totals, matched };
 }
 
-function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH) {
+function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH, rawAttendance = [], rawLocations = []) {
   const salesOrderRecords = rawSales.map(r => ({ ...r, _source: 'sales' }));
   const onboardingOrderRecords = rawOnboarding.map(r => ({ ...r, _source: 'onboarding' }));
+  const paymentCandidateResolver = record => resolveCandidateForPayment(record, MASTER_CANDIDATES);
 
   const activeBDNames = new Set(MASTER_CANDIDATES.map(s => s.name.toLowerCase().trim()));
 
@@ -215,6 +301,12 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
       const latOffset = ((seed % 100) / 100 - 0.5) * 0.04;
       const lngOffset = (((seed >> 3) % 100) / 100 - 0.5) * 0.04;
 
+      const sourceLatitude = Number(v.latitude || v.lat || v.start_day_latitude);
+      const sourceLongitude = Number(v.longitude || v.lng || v.lon || v.start_day_longitude);
+      const locationRecord = rawLocations.find(row => recordMatchesCandidate(row, { name: v.bd_name })) || {};
+      const locationLatitude = Number(locationRecord.latitude || locationRecord.lat || locationRecord.start_day_latitude);
+      const locationLongitude = Number(locationRecord.longitude || locationRecord.lng || locationRecord.lon || locationRecord.start_day_longitude);
+
       return {
         bd_name: v.bd_name,
         visit_date: v.visit_date,
@@ -228,8 +320,11 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
         verify_status: v.verify_status || 'PENDING',
         manager_email: v.manager_email,
         city: city,
-        latitude: coords[0] + latOffset,
-        longitude: coords[1] + lngOffset
+        // Use the supplied field GPS feed when it is available; city coordinates are only a fallback.
+        latitude: Number.isFinite(sourceLatitude) && Number.isFinite(sourceLongitude)
+          ? sourceLatitude : (Number.isFinite(locationLatitude) && Number.isFinite(locationLongitude) ? locationLatitude : coords[0] + latOffset),
+        longitude: Number.isFinite(sourceLatitude) && Number.isFinite(sourceLongitude)
+          ? sourceLongitude : (Number.isFinite(locationLatitude) && Number.isFinite(locationLongitude) ? locationLongitude : coords[1] + lngOffset)
       };
     });
 
@@ -245,8 +340,8 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
     }
     const aliasesArr = Array.from(aliases);
 
-    const salesSummary = sumOrdersLocal(salesOrderRecords, c, aliasesArr, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE);
-    const onboardingSummary = sumOrdersLocal(onboardingOrderRecords, c, aliasesArr, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE);
+    const salesSummary = sumOrdersLocal(salesOrderRecords, c, aliasesArr, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE, paymentCandidateResolver);
+    const onboardingSummary = sumOrdersLocal(onboardingOrderRecords, c, aliasesArr, DYNAMIC_MTD_MONTH, DYNAMIC_TODAY_DATE, paymentCandidateResolver);
 
     const ftdSales = salesSummary.ftdCount;
     const ftdRevenue = onboardingSummary.ftdRevenue;
@@ -284,6 +379,23 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
     const todayVisitsList = bdVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE);
 
 
+    const attendanceRows = rawAttendance.filter(record => recordMatchesCandidate(record, c));
+    const mtdAttendance = attendanceRows.filter(row => formatToISODate(row.attendance_date || row.date || row.created_at).startsWith(DYNAMIC_MTD_MONTH));
+    const todayAttendance = attendanceRows.filter(row => formatToISODate(row.attendance_date || row.date || row.created_at) === DYNAMIC_TODAY_DATE);
+    const latestAttendance = [...attendanceRows].sort((a, b) =>
+      String(b.attendance_date || b.date || '').localeCompare(String(a.attendance_date || a.date || ''))
+    )[0];
+    const presentDates = new Set(mtdAttendance
+      .filter(row => String(row.attendance || row.status || 'Present').toLowerCase() === 'present')
+      .map(row => formatToISODate(row.attendance_date || row.date || row.created_at)));
+    const presentToday = todayAttendance.some(row => String(row.attendance || row.status || 'Present').toLowerCase() === 'present');
+    const presentDays = presentDates.size;
+    const workingDays = getWorkingDaysElapsed(DYNAMIC_TODAY_DATE);
+    const absentDays = Math.max(0, workingDays - presentDays);
+    const attendancePct = workingDays ? Math.round((presentDays / workingDays) * 100) : 0;
+    const attendanceStart = todayAttendance.find(row => row.first_visit_time || row.start_day_time) || latestAttendance;
+    const dayStart = formatAttendanceTime(attendanceStart?.first_visit_time || attendanceStart?.start_day_time);
+
     return {
       ...c,
       user_id: c.mobile,
@@ -301,13 +413,16 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
       ltd_revenue: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
       sale_punches: mtdSales,
       punched_orders: punchedOrders,
-      start_day_time: todayVisitsList.length > 0
-        ? `Active (${todayVisitsList.length} visit${todayVisitsList.length !== 1 ? 's' : ''})`
-        : 'Not Started',
+      // Attendance is the source of truth for the start of a workday. A BD can be present before logging a visit.
+      start_day_time: presentToday ? (dayStart || 'Started') : 'Not Started',
+      attendance_status: presentToday ? 'Present' : 'Not Started',
+      attendance_date: presentToday ? DYNAMIC_TODAY_DATE : '',
+      mtd_present_days: presentDays,
+      mtd_absent_days: absentDays,
       onboarding_payment_ftd: ftdRevenue,
       onboarding_payment_mtd: DYNAMIC_MTD_MONTH === '2026-07' ? (mtdRevenue > 0 ? mtdRevenue : c.july_ach_rev_user) : mtdRevenue,
       onboarding_payment_ltd: DYNAMIC_MTD_MONTH === '2026-07' ? (ltdRevenue > 0 ? ltdRevenue : c.july_ach_rev_user) : ltdRevenue,
-      mtd_attendance_pct: 86
+      mtd_attendance_pct: attendancePct
     };
   });
 
@@ -372,7 +487,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-04-cache-healing-v18';
+const DATA_MAPPING_VERSION = '2026-08-04-attendance-and-gps-v19';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -398,7 +513,9 @@ export const getData = () => {
       currentData._rawOnboarding,
       currentData.visits || [],
       DYNAMIC_TODAY_DATE,
-      DYNAMIC_MTD_MONTH
+      DYNAMIC_MTD_MONTH,
+      currentData._rawAttendance || [],
+      currentData._rawLocations || []
     );
     currentData = {
       ...currentData,
@@ -539,10 +656,7 @@ export const getStats = (filters = {}) => {
   const rejectedVisits = visits.filter(v => v.verify_status === 'REJECTED' || v.verify_status === 'FAILED').length;
   const verificationRate = mtdVisits > 0 ? Math.round((verifiedVisits / mtdVisits) * 100) : 85;
 
-  const activeToday = salespersons.filter(s =>
-    (s.start_day_time && s.start_day_time !== '--:--') ||
-    visits.some(v => (v.bd_name || '').toLowerCase() === (s.name || '').toLowerCase() && v.visit_date === latestDate)
-  ).length;
+  const activeToday = salespersons.filter(s => s.attendance_status === 'Present').length;
 
   const avgVisitsPerCandidate = totalCandidates > 0 ? parseFloat((mtdVisits / totalCandidates).toFixed(1)) : 0;
   const coverageCities = new Set(visits.map(v => (v.city || '').trim()).filter(c => c && c !== 'Other' && !c.match(/^[0-9A-Z]{4}\+[0-9A-Z]{3,4}$/))).size || 124;
@@ -552,13 +666,57 @@ export const getStats = (filters = {}) => {
   const totalFtdRevenue = salespersons.reduce((sum, s) => sum + (s.ftd_revenue || 0), 0);
   const totalMtdSales = salespersons.reduce((sum, s) => sum + (s.mtd_sales || 0), 0);
   const totalMtdRevenue = salespersons.reduce((sum, s) => sum + (s.mtd_revenue || 0), 0);
+  const attendanceMembers = salespersons.filter(s => Number.isFinite(s.mtd_attendance_pct));
+  const avgAttendance = attendanceMembers.length
+    ? Math.round(attendanceMembers.reduce((sum, s) => sum + s.mtd_attendance_pct, 0) / attendanceMembers.length)
+    : 0;
 
   return {
     totalCandidates, totalManagers, todayVisits, mtdVisits, ltdVisits,
     verifiedVisits, pendingVisits, rejectedVisits, verificationRate,
     activeToday, avgVisitsPerCandidate, coverageCities, totalDistance, latestDate,
-    totalFtdSales, totalFtdRevenue, totalMtdSales, totalMtdRevenue
+    totalFtdSales, totalFtdRevenue, totalMtdSales, totalMtdRevenue, avgAttendance
   };
+};
+
+// Role-level metrics are shared by the Head and each manager portal, so both views use identical definitions.
+export const getRoleMetrics = (filters = {}) => {
+  const data = getData();
+  const managerId = filters.managerId ? Number(filters.managerId) : null;
+  const people = (data.salespersons || []).filter(person => !managerId || person.manager_id === managerId);
+  const month = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const roles = [
+    { key: 'Manager', label: 'Manager (SH/RH)', matches: p => /regional head|manager|state head|sales head/i.test(p.role || p.designation || '') },
+    { key: 'TL', label: 'TL', matches: p => /team lead|\btl\b/i.test(p.role || p.designation || '') },
+    { key: 'BD', label: 'BD', matches: p => /business development|\bbd\b/i.test(p.role || p.designation || '') },
+    { key: 'ISA', label: 'ISA', matches: p => /\bisa\b/i.test(p.role || p.designation || '') },
+  ];
+
+  return roles.map(role => {
+    const members = people.filter(role.matches);
+    const names = new Set(members.map(p => localNormalizeText(p.name)));
+    const visits = (data.visits || []).filter(v => names.has(localNormalizeText(v.bd_name)));
+    const ftdVisits = visits.filter(v => v.visit_date === today).length;
+    const mtdVisits = visits.filter(v => String(v.visit_date || '').startsWith(month)).length;
+    const activeToday = members.filter(p => p.attendance_status === 'Present').length;
+    const attendance = members.length
+      ? Math.round(members.reduce((sum, p) => sum + (Number(p.mtd_attendance_pct) || 0), 0) / members.length)
+      : 0;
+    return {
+      ...role,
+      count: members.length,
+      activeToday,
+      mtdVisits,
+      ftdVisits,
+      cities: new Set(visits.filter(v => String(v.visit_date || '').startsWith(month)).map(v => v.city).filter(Boolean)).size,
+      ftdSales: members.reduce((sum, p) => sum + (p.ftd_sales || 0), 0),
+      ftdRevenue: members.reduce((sum, p) => sum + (p.ftd_revenue || 0), 0),
+      mtdSales: members.reduce((sum, p) => sum + (p.mtd_sales || 0), 0),
+      mtdRevenue: members.reduce((sum, p) => sum + (p.mtd_revenue || 0), 0),
+      attendance,
+    };
+  });
 };
 
 // ─── getVisitsTrend ───
@@ -937,13 +1095,18 @@ const fetchCSVWithTimeout = async (url, timeoutMs = 8000) => {
 };
 
 export const fetchLiveData = async () => {
-  const onboardingUrl = 'https://data.apnibus.com/api/public/card/fe85fe32-ac30-499e-9c63-05804c72c4b6/query/csv';
+  const onboardingUrl = 'https://data.apnibus.com/public/question/fe85fe32-ac30-499e-9c63-05804c72c4b6.csv';
   const salesUrl = 'https://data.apnibus.com/api/public/card/e5e96873-7f54-45d1-b2f4-b2ead7d322fc/query/csv';
+  // Public question exports accept CSV as well as XLSX. CSV keeps the browser refresh lightweight.
+  const attendanceUrl = 'https://data.apnibus.com/public/question/6b88fc31-2a6b-45b3-8942-e78b1adde56d.csv';
+  const locationsUrl = 'https://data.apnibus.com/public/question/befce31e-f208-4675-a559-19137d5b08ca.csv';
   
   const visitsUrls = {
-    'sonu.mishra@apnibus.com': 'https://data.apnibus.com/api/public/card/c8a0771c-ec40-43d5-b23b-30b1b1b2375a/query/csv',
-    'tarun.kumar@apnibus.com': 'https://data.apnibus.com/api/public/card/4d34c0fc-077c-44a6-b949-ebe9e36a1106/query/csv',
-    'rajnish.kumar@apnibus.com': 'https://data.apnibus.com/api/public/card/7420d1dc-f628-4628-b7cf-0abcbfe37b64/query/csv'
+    // Manager-specific public visit exports supplied by the operations team.
+    'sonu.mishra@apnibus.com': 'https://data.apnibus.com/public/question/c8a0771c-ec40-43d5-b23b-30b1b1b2375a.csv',
+    'tarun.kumar@apnibus.com': 'https://data.apnibus.com/public/question/4d34c0fc-077c-44a6-b949-ebe9e36a1106.csv',
+    'rajnish.kumar@apnibus.com': 'https://data.apnibus.com/public/question/7420d1dc-f628-4628-b7cf-0abcbfe37b64.csv',
+    'rajwinder.singh@apnibus.com': 'https://data.apnibus.com/public/question/3f42d66d-f5e7-467d-b236-d407d4137195.csv'
   };
 
   if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
@@ -955,9 +1118,16 @@ export const fetchLiveData = async () => {
       fetchCSVWithTimeout(onboardingUrl, 8000),
       fetchCSVWithTimeout(salesUrl, 8000)
     ]);
+    // A slow GPS export must never prevent sales and attendance from refreshing.
+    const [attendanceResult, locationsResult] = await Promise.allSettled([
+      fetchCSVWithTimeout(attendanceUrl, 25000),
+      fetchCSVWithTimeout(locationsUrl, 25000)
+    ]);
 
     const rawOnboarding = localParseCSV(onboardingRes);
     const rawSales = localParseCSV(salesRes);
+    const rawAttendance = attendanceResult.status === 'fulfilled' ? localParseCSV(attendanceResult.value) : [];
+    const rawLocations = locationsResult.status === 'fulfilled' ? localParseCSV(locationsResult.value) : [];
 
     let rawSonuVisits = [];
     let rawTarunVisits = [];
@@ -974,7 +1144,10 @@ export const fetchLiveData = async () => {
         .catch(e => console.warn("Failed/Timed out loading Tarun visits, using fallback:", e)),
       fetchCSVWithTimeout(visitsUrls['rajnish.kumar@apnibus.com'], 25000)
         .then(res => { rawRajnishVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' })); })
-        .catch(e => console.warn("Failed/Timed out loading Rajnish visits, using fallback:", e))
+        .catch(e => console.warn("Failed/Timed out loading Rajnish visits, using fallback:", e)),
+      fetchCSVWithTimeout(visitsUrls['rajwinder.singh@apnibus.com'], 25000)
+        .then(res => { rawRajwinderVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajwinder.singh@apnibus.com' })); })
+        .catch(e => console.warn("Failed/Timed out loading Rajwinder visits, using fallback:", e))
     ]);
 
     const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits, ...rawRajwinderVisits];
@@ -988,7 +1161,9 @@ export const fetchLiveData = async () => {
       rawOnboarding,
       allVisits,
       DYNAMIC_TODAY_DATE,
-      DYNAMIC_MTD_MONTH
+      DYNAMIC_MTD_MONTH,
+      rawAttendance,
+      rawLocations
     );
 
     const nextData = {
@@ -1000,12 +1175,16 @@ export const fetchLiveData = async () => {
       visits: compiledVisits,
       _rawSales: rawSales,
       _rawOnboarding: rawOnboarding,
+      _rawAttendance: rawAttendance,
+      _rawLocations: rawLocations,
       _lastDate: systemTodayStr
     };
 
     if (typeof window !== 'undefined' && window.__apnibus_diagnostics) {
       window.__apnibus_diagnostics.onboardingCount = rawOnboarding.length;
       window.__apnibus_diagnostics.salesCount = rawSales.length;
+      window.__apnibus_diagnostics.attendanceCount = rawAttendance.length;
+      window.__apnibus_diagnostics.locationCount = rawLocations.length;
       window.__apnibus_diagnostics.visitsCount = allVisits.length;
       window.__apnibus_diagnostics.systemTodayStr = systemTodayStr;
       window.__apnibus_diagnostics.DYNAMIC_TODAY_DATE = DYNAMIC_TODAY_DATE;
