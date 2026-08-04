@@ -5,7 +5,7 @@ import {
   ShieldCheck, Shield, ChevronRight, Search, Flame, ArrowRight, UserCheck, Calendar, Filter,
   DollarSign, TrendingUp, Briefcase, Zap, Clock
 } from 'lucide-react';
-import { getData, getStats, getVisitsTrend, getRoleMetrics, getRMCombinedSales } from '../data/dataService';
+import { getData, getStats, getVisitsTrend, getRoleMetrics, getRMCombinedSales, getRMCombinedSalesByManager } from '../data/dataService';
 import { getBDRiskScores, getVisitForecast, getAINarrativeInsights, getTeamHealthIndex } from '../data/aiEngine';
 import IndividualBDDashboard from './IndividualBDDashboard';
 import HeadPerformanceView from './HeadPerformanceView';
@@ -85,6 +85,12 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const DYNAMIC_MTD_MONTH = useMemo(() => systemTodayStr.slice(0, 7), [systemTodayStr]);
 
   // Aggregate all team orders dynamically from individual candidates
+  const rmOrders = useMemo(() => {
+    const grouped = getRMCombinedSalesByManager();
+    const managerRm = grouped[managerEmail] || { orders: [] };
+    return Array.isArray(managerRm.orders) ? managerRm.orders.map(o => ({ ...o, bd_name: 'RM Combined', bd_id: null })) : [];
+  }, [managerEmail]);
+
   const teamOrders = useMemo(() => {
     const orders = [];
     mgrBDs.forEach(s => {
@@ -94,8 +100,8 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
         });
       }
     });
-    return orders;
-  }, [mgrBDs]);
+    return [...orders, ...rmOrders];
+  }, [mgrBDs, rmOrders]);
 
   // Filter orders according to active timeframe / custom date
   const filteredOrders = useMemo(() => {

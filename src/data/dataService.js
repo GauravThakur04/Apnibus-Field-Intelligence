@@ -731,6 +731,31 @@ export const getStats = (filters = {}) => {
 // ─── RM COMBINED SALES ────────────────────────────────────────────────────────
 // Sales with bd_code = '1' are punched by RMs (Regional Managers), not by individual BDs.
 // These are tracked separately as "Combined RM Sales".
+const RM_MANAGER_STATE_MAP = {
+  'rajasthan': 'rajnish.kumar@apnibus.com',
+  'jharkhand': 'rajnish.kumar@apnibus.com',
+  'punjab': 'rajwinder.singh@apnibus.com',
+  'himachal pradesh': 'tarun.kumar@apnibus.com',
+  'himachal': 'tarun.kumar@apnibus.com',
+  'uttar pradesh': 'tarun.kumar@apnibus.com',
+  'madhya pradesh': 'tarun.kumar@apnibus.com',
+  'delhi': 'sonu.mishra@apnibus.com',
+  'delhi-ncr': 'sonu.mishra@apnibus.com',
+  'haryana': 'sonu.mishra@apnibus.com',
+  'chhattisgarh': 'sonu.mishra@apnibus.com',
+  'bihar': 'sonu.mishra@apnibus.com',
+  'north': 'tarun.kumar@apnibus.com'
+};
+
+function normalizeRMState(value) {
+  return String(value || '').toLowerCase().trim().replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function getRMManagerEmailForState(value) {
+  const normalized = normalizeRMState(value);
+  return RM_MANAGER_STATE_MAP[normalized] || '';
+}
+
 export const getRMCombinedSales = () => {
   const rawSales = currentData._rawSales || [];
   const rawOnboarding = currentData._rawOnboarding || [];
@@ -781,6 +806,66 @@ export const getRMCombinedSales = () => {
   });
 
   return { ftdCount, ftdRevenue, mtdCount, mtdRevenue, ltdCount, ltdRevenue, orders };
+};
+
+export const getRMCombinedSalesByManager = () => {
+  const rawSales = currentData._rawSales || [];
+  const rawOnboarding = currentData._rawOnboarding || [];
+  const allRecords = [...rawSales, ...rawOnboarding];
+  const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const currentMonth = systemTodayStr.slice(0, 7);
+
+  const rmRecords = allRecords.filter(r => {
+    if (String(r.payment_status || '').toUpperCase() === 'C') return false;
+    return String(r.bd_code || '').trim() === '1';
+  });
+
+  const seen = new Set();
+  const unique = rmRecords.filter(r => {
+    const key = r.order_id || `${r.created_on}|${r.payable_amount}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const grouped = {};
+  unique.forEach(r => {
+    const managerEmail = getRMManagerEmailForState(r.bd_state || r.operator_state || r.state || r.region);
+    if (!managerEmail) return;
+
+    if (!grouped[managerEmail]) {
+      grouped[managerEmail] = { ftdCount: 0, ftdRevenue: 0, mtdCount: 0, mtdRevenue: 0, ltdCount: 0, ltdRevenue: 0, orders: [] };
+    }
+
+    const amount = parseFloat(r.payable_amount || r.wallet_amount || 0) || 0;
+    const dateStr = formatToISODate(r.created_on || r.order_date || '');
+    const qty = parseInt(r.num_items || 1, 10) || 1;
+
+    grouped[managerEmail].ltdCount += qty;
+    grouped[managerEmail].ltdRevenue += amount;
+    if (dateStr.startsWith(currentMonth)) {
+      grouped[managerEmail].mtdCount += qty;
+      grouped[managerEmail].mtdRevenue += amount;
+      if (dateStr === systemTodayStr) {
+        grouped[managerEmail].ftdCount += qty;
+        grouped[managerEmail].ftdRevenue += amount;
+      }
+    }
+
+    grouped[managerEmail].orders.push({
+      order_id: r.order_id,
+      date: dateStr,
+      time: (r.created_on || '').slice(11, 19),
+      operator_name: r.operator_name || 'N/A',
+      company_name: r.company_name || 'N/A',
+      mobile: r.mobile || r.bd_code || 'N/A',
+      payable_amount: amount,
+      num_items: parseInt(r.num_items || 1, 10) || 1,
+      state: r.operator_state || r.bd_state || 'N/A'
+    });
+  });
+
+  return grouped;
 };
 
 // Role-level metrics are shared by the Head and each manager portal, so both views use identical definitions.
