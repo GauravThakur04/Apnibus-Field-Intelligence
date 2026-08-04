@@ -5,10 +5,10 @@ import {
   ShieldCheck, Shield, ChevronRight, Search, Flame, ArrowRight, UserCheck, Calendar, Filter,
   DollarSign, TrendingUp, Briefcase, Zap, Clock
 } from 'lucide-react';
-import { getData, getStats, getVisitsTrend, getRoleMetrics } from '../data/dataService';
+import { getData, getStats, getVisitsTrend, getRoleMetrics, getRMCombinedSales } from '../data/dataService';
 import { getBDRiskScores, getVisitForecast, getAINarrativeInsights, getTeamHealthIndex } from '../data/aiEngine';
 import IndividualBDDashboard from './IndividualBDDashboard';
-import RoleKpiMatrix from './RoleKpiMatrix';
+import HeadPerformanceView from './HeadPerformanceView';
 
 const MANAGER_CONFIGS = {
   'rajnish.kumar@apnibus.com': {
@@ -410,56 +410,9 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
         </div>
       </div>
 
-      {/* Team KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14 }}>
-        {[
-          { 
-            label: customDate ? 'Revenue (Date)' : timeframe === 'FTD' ? 'Revenue (Today)' : timeframe === 'LTD' ? 'Revenue (LTD)' : 'Revenue (MTD)', 
-            val: teamRevenue >= 100000 ? `₹ ${(teamRevenue / 100000).toFixed(1)} L` : `₹ ${(teamRevenue / 1000).toFixed(1)}k`, 
-            icon: DollarSign, color: '#10b981', bg: 'rgba(16,185,129,0.08)' 
-          },
-          { 
-            label: customDate ? 'Sales Punches (Date)' : timeframe === 'FTD' ? 'Sales Punches (Today)' : timeframe === 'LTD' ? 'Sales Punches (LTD)' : 'Sales Punches (MTD)', 
-            val: `${teamSalePunches.toLocaleString()}`, 
-            icon: Briefcase, color: '#2563eb', bg: 'rgba(37,99,235,0.08)' 
-          },
-          { 
-            label: customDate ? 'Service Punches (Date)' : timeframe === 'FTD' ? 'Service Punches (Today)' : timeframe === 'LTD' ? 'Service Punches (LTD)' : 'Service Punches (MTD)', 
-            val: `${teamServicePunches.toLocaleString()}`, 
-            icon: Zap, color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' 
-          },
-          { 
-            label: customDate || timeframe === 'FTD' ? 'Attendance (Day)' : timeframe === 'LTD' ? 'Avg Attendance (LTD)' : 'Avg Attendance (MTD)', 
-            val: `${teamAvgAttendance}%`, 
-            icon: UserCheck, color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)' 
-          },
-          { 
-            label: customDate ? 'Visits (Date)' : timeframe === 'FTD' ? "Today's Visits" : timeframe === 'LTD' ? 'Visits (LTD)' : 'Visits (MTD)', 
-            val: teamVisitsCount.toLocaleString(), 
-            icon: Activity, color: cfg.color, bg: cfg.light 
-          },
-          { 
-            label: 'Day Started Today',
-            val: `${activeBdsCount} / ${mgrBDs.length}`, 
-            icon: Users, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' 
-          },
-        ].map((k, i) => {
-          const Icon = k.icon;
-          return (
-            <div key={i} className="card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: k.bg, color: k.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={18} />
-              </div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-header)', color: 'var(--text-heading)' }}>{k.val}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
 
-      <RoleKpiMatrix metrics={roleMetrics} scope={`${cfg.name}'s team`} />
+      {/* Role-based Performance Grid (Head portal style) */}
+      <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={getRMCombinedSales()} />
 
       {/* Team Member BD Grid */}
       <div className="card" style={{ padding: '20px 24px' }}>
