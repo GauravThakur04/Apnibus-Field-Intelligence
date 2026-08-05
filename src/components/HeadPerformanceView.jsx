@@ -28,7 +28,7 @@ const HeadPerformanceView = ({ metrics, stats, rmSales }) => {
         <div className="card-title">Head portal performance</div>
         <div className="card-subtitle">Live attendance, visits, coverage, sales, and revenue by team role</div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
         {[overview, ...metrics].map((role, index) => {
           const startedPct = role.count ? Math.round((role.activeToday / role.count) * 100) : 0;
           return (
