@@ -21,6 +21,9 @@ const HeadPerformanceView = ({ metrics, stats, rmSales }) => {
   };
 
   const rm = rmSales || { ftdCount: 0, ftdRevenue: 0, mtdCount: 0, mtdRevenue: 0 };
+  const headCards = [overview, ...metrics];
+  const firstRowCards = headCards.slice(0, 3);
+  const secondRowCards = headCards.slice(3);
 
   return (
     <section>
@@ -29,7 +32,7 @@ const HeadPerformanceView = ({ metrics, stats, rmSales }) => {
         <div className="card-subtitle">Live attendance, visits, coverage, sales, and revenue by team role</div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
-        {[overview, ...metrics].map((role, index) => {
+        {firstRowCards.map((role, index) => {
           const startedPct = role.count ? Math.round((role.activeToday / role.count) * 100) : 0;
           return (
             <div key={role.key} className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -62,9 +65,13 @@ const HeadPerformanceView = ({ metrics, stats, rmSales }) => {
             </div>
           );
         })}
+      </div>
 
-        {/* RM Combined Sales Card */}
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginTop: 14 }}>
+        {secondRowCards.map((role, index) => {
+          const startedPct = role.count ? Math.round((role.activeToday / role.count) * 100) : 0;
+          return (
+            <div key={role.key} className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', background: 'rgba(245,158,11,0.10)', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontSize: 11, color: '#d97706', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>RM Combined Sales</div>
             <div style={{ marginTop: 5, fontSize: 23, fontWeight: 900, color: 'var(--text-heading)', fontFamily: 'var(--font-header)' }}>{rm.mtdCount}</div>
