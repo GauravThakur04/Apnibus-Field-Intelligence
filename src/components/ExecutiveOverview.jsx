@@ -159,8 +159,8 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 20, alignItems: 'start' }}>
-        <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} showRMCombinedSales={false} />
+      <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 1fr', gap: 20, alignItems: 'start' }}>
+        <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} showRMCombinedSales={false} maxCards={3} />
 
         <div style={{ display: 'grid', gap: 20 }}>
           <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>

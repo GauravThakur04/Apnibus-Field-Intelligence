@@ -10,7 +10,7 @@ const Progress = ({ value, color = '#2563eb' }) => (
   </div>
 );
 
-const HeadPerformanceView = ({ metrics, stats, rmSales, showRMCombinedSales = true }) => {
+const HeadPerformanceView = ({ metrics, stats, rmSales, showRMCombinedSales = true, maxCards = null }) => {
   const total = key => metrics.reduce((sum, role) => sum + (role[key] || 0), 0);
   const totalTeam = stats.totalCandidates || total('count');
   const overview = {
@@ -29,7 +29,7 @@ const HeadPerformanceView = ({ metrics, stats, rmSales, showRMCombinedSales = tr
         <div className="card-subtitle">Live attendance, visits, coverage, sales, and revenue by team role</div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
-        {[overview, ...metrics].map((role, index) => {
+        {(maxCards != null ? [overview, ...metrics].slice(0, maxCards) : [overview, ...metrics]).map((role, index) => {
           const startedPct = role.count ? Math.round((role.activeToday / role.count) * 100) : 0;
           return (
             <div key={role.key} className="card" style={{ padding: 0, overflow: 'hidden' }}>

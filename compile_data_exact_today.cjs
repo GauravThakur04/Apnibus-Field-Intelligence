@@ -39,7 +39,7 @@ for (let i = 1; i < lines.length; i++) {
 
 console.log(`Loaded ${orderRecords.length} actual revenue order records.`);
 
-const TODAY_DATE = '2026-07-30';
+const TODAY_DATE = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
 // Exact RM Name Matching
 currentData.salespersons.forEach((sp) => {
@@ -56,7 +56,7 @@ currentData.salespersons.forEach((sp) => {
 
   let ftdSales = 0, ftdRevenue = 0;
   let mtdSales = 0, mtdRevenue = 0;
-  let ltdSales = 0, ltdRevenue = 0;
+  
 
   matchingOrders.forEach(o => {
     const qty = parseInt(o.num_items) || 1;
@@ -81,8 +81,6 @@ currentData.salespersons.forEach((sp) => {
   sp.ftd_revenue = ftdRevenue;
   sp.mtd_sales = mtdSales;
   sp.mtd_revenue = mtdRevenue;
-  sp.ltd_sales = ltdSales;
-  sp.ltd_revenue = ltdRevenue;
   sp.sale_punches = mtdSales;
 });
 
