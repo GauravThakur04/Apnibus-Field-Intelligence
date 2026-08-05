@@ -1,4 +1,4 @@
-import { getData } from './dataService.js';
+import { getData, getVisitTime } from './dataService.js';
 
 export const mean   = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 export const stdDev = arr => {
@@ -18,19 +18,6 @@ const cached = (key, fn) => {
 };
 
 export const clearAICache = () => cache.clear();
-
-// Helper to convert HH:MM string or ISO date into total minutes from midnight
-function getVisitTime(v) {
-  if (v.check_in_time) {
-    const parts = v.check_in_time.split(':');
-    if (parts.length >= 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-  }
-  if (v.visit_time) {
-    const parts = v.visit_time.split(':');
-    if (parts.length >= 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-  }
-  return 10 * 60; // Default 10:00 AM
-}
 
 function getVisitDurationMinutes(v) {
   if (v.duration_minutes !== undefined && v.duration_minutes !== null) {

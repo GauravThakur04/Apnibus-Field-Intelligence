@@ -152,20 +152,20 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
         </div>
       </div>
 
-      <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 20, alignItems: 'start' }}>
+        <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} />
 
-      {/* Main 3-col layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }}>
-        {/* Trend + Forecast */}
-        <div className="card">
-          <div className="card-header">
-            <div>
-              <div className="card-title"><Sparkles size={14} color="var(--primary)" /> Visits Trend + 7-Day AI Forecast</div>
-              <div className="card-subtitle">Dashed line = predictive model output · trend: <strong style={{ color: forecast.trend === 'up' ? '#10b981' : forecast.trend === 'down' ? '#f43f5e' : '#f59e0b' }}>{forecast.trend === 'up' ? '↑ Increasing' : forecast.trend === 'down' ? '↓ Declining' : '→ Stable'}</strong></div>
+        <div>
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <div className="card-title"><Sparkles size={14} color="var(--primary)" /> Visits Trend + 7-Day AI Forecast</div>
+                <div className="card-subtitle">Dashed line = predictive model output · trend: <strong style={{ color: forecast.trend === 'up' ? '#10b981' : forecast.trend === 'down' ? '#f43f5e' : '#f59e0b' }}>{forecast.trend === 'up' ? '↑ Increasing' : forecast.trend === 'down' ? '↓ Declining' : '→ Stable'}</strong></div>
+              </div>
             </div>
-          </div>
-          <div className="card-body">
-            <ReactApexChart options={trendForecastOpts} series={trendForecastSeries} type="area" height={220} />
+            <div className="card-body">
+              <ReactApexChart options={trendForecastOpts} series={trendForecastSeries} type="area" height={220} />
+            </div>
           </div>
         </div>
       </div>
