@@ -153,18 +153,42 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 20, alignItems: 'start' }}>
-        <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} />
+        <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} showRMCombinedSales={false} />
 
-        <div>
-          <div className="card">
+        <div style={{ display: 'grid', gap: 20 }}>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="card-header">
               <div>
                 <div className="card-title"><Sparkles size={14} color="var(--primary)" /> Visits Trend + 7-Day AI Forecast</div>
                 <div className="card-subtitle">Dashed line = predictive model output · trend: <strong style={{ color: forecast.trend === 'up' ? '#10b981' : forecast.trend === 'down' ? '#f43f5e' : '#f59e0b' }}>{forecast.trend === 'up' ? '↑ Increasing' : forecast.trend === 'down' ? '↓ Declining' : '→ Stable'}</strong></div>
               </div>
             </div>
-            <div className="card-body">
+            <div className="card-body" style={{ flex: 1 }}>
               <ReactApexChart options={trendForecastOpts} series={trendForecastSeries} type="area" height={220} />
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px', background: 'rgba(245,158,11,0.10)', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, color: '#d97706', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>RM Combined Sales</div>
+              <div style={{ marginTop: 5, fontSize: 23, fontWeight: 900, color: 'var(--text-heading)', fontFamily: 'var(--font-header)' }}>{rmSales.mtdCount}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>MTD punches by RM</div>
+            </div>
+            <div style={{ padding: '6px 16px 12px' }}>
+              <div style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 8, background: 'rgba(245,158,11,0.12)', color: '#d97706', fontWeight: 700 }}>bd_code = 1</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>→ Punched by RM</span>
+              </div>
+              {[
+                ['FTD Sales', rmSales.ftdCount],
+                ['FTD Revenue', money(rmSales.ftdRevenue)],
+                ['MTD Sales', rmSales.mtdCount],
+                ['MTD Revenue', money(rmSales.mtdRevenue)],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '9px 0', borderBottom: '1px solid var(--border)', fontSize: 11 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>{label}</span><strong style={{ color: 'var(--text-heading)', textAlign: 'right' }}>{value}</strong>
+                </div>
+              ))}
             </div>
           </div>
         </div>

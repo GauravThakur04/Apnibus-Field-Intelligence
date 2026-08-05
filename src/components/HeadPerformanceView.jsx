@@ -10,7 +10,7 @@ const Progress = ({ value, color = '#2563eb' }) => (
   </div>
 );
 
-const HeadPerformanceView = ({ metrics, stats, rmSales }) => {
+const HeadPerformanceView = ({ metrics, stats, rmSales, showRMCombinedSales = true }) => {
   const total = key => metrics.reduce((sum, role) => sum + (role[key] || 0), 0);
   const totalTeam = stats.totalCandidates || total('count');
   const overview = {
