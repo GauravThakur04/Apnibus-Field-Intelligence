@@ -39,7 +39,6 @@ const AIInsightCard = ({ insight }) => {
 };
 
 const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
-  const [clickedStatus, setClickedStatus] = useState(null);
   const [clickedState, setClickedState]   = useState(null);
   const [distTimeframe, setDistTimeframe] = useState('MTD'); // 'FTD' | 'MTD' | 'LTD'
 
@@ -59,39 +58,6 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
   const gc = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(226,232,240,0.9)';
 
   // Donut: verify status — clickable
-  const donutSeries = [stats.verifiedVisits, stats.pendingVisits, Math.max(0, stats.rejectedVisits || 0)];
-  const donutLabels = ['Verified', 'Pending', 'Rejected'];
-  const donutColors = ['#10b981', '#f59e0b', '#f43f5e'];
-
-  const donutOpts = useMemo(() => ({
-    chart: {
-      background: 'transparent', fontFamily: 'Inter,sans-serif',
-      events: {
-        dataPointSelection: (e, ctx, { dataPointIndex }) => {
-          setClickedStatus(prev => prev === donutLabels[dataPointIndex] ? null : donutLabels[dataPointIndex]);
-        }
-      }
-    },
-    labels: donutLabels, colors: donutColors,
-    legend: { show: false },
-    dataLabels: { enabled: false },
-    stroke: { width: 0 },
-    states: { hover: { filter: { type: 'lighten', value: 0.15 } } },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: '70%',
-          labels: {
-            show: true,
-            name: { show: true, color: tc, fontFamily: 'Inter,sans-serif', fontSize: '11px' },
-            value: { show: true, color: isDark ? '#f1f5f9' : '#0f172a', fontSize: '22px', fontWeight: 800, fontFamily: 'Plus Jakarta Sans,sans-serif' },
-            total: { show: true, label: 'Total Visits', color: tc, fontFamily: 'Inter,sans-serif', fontSize: '11px', formatter: w => w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString() }
-          }
-        }
-      }
-    },
-    tooltip: { theme, style: { fontFamily: 'Inter,sans-serif' } }
-  }), [isDark, theme, tc]);
 
   // State pie — clickable
   const topStates = states.slice(0, 6);
@@ -189,8 +155,8 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
       <HeadPerformanceView metrics={roleMetrics} stats={stats} rmSales={rmSales} />
 
       {/* Main 3-col layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
-        {/* Left: Trend + Forecast */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }}>
+        {/* Trend + Forecast */}
         <div className="card">
           <div className="card-header">
             <div>
@@ -200,41 +166,6 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
           </div>
           <div className="card-body">
             <ReactApexChart options={trendForecastOpts} series={trendForecastSeries} type="area" height={220} />
-          </div>
-        </div>
-
-        {/* Right: Status Donut */}
-        <div className="card">
-          <div className="card-header">
-            <div>
-              <div className="card-title">Visit Status</div>
-              <div className="card-subtitle">Click a segment to filter</div>
-            </div>
-            {clickedStatus && <button className="btn-link" onClick={() => setClickedStatus(null)}>Reset</button>}
-          </div>
-          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <ReactApexChart options={donutOpts} series={donutSeries} type="donut" height={180} />
-            {/* Legend with clickable pills */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
-              {donutLabels.map((l, i) => (
-                <div key={l} onClick={() => setClickedStatus(prev => prev === l ? null : l)} style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px',
-                  borderRadius: 20, cursor: 'pointer', fontSize: 11.5, fontWeight: 600,
-                  background: clickedStatus === l ? `${donutColors[i]}18` : 'var(--bg-input)',
-                  border: `1.5px solid ${clickedStatus === l ? donutColors[i] : 'var(--border)'}`,
-                  color: clickedStatus === l ? donutColors[i] : 'var(--text-muted)',
-                  transition: 'var(--transition)'
-                }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: donutColors[i] }} />
-                  {l}: {donutSeries[i].toLocaleString()}
-                </div>
-              ))}
-            </div>
-            {clickedStatus && (
-              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
-                Showing <strong style={{ color: 'var(--text-main)' }}>{donutSeries[donutLabels.indexOf(clickedStatus)].toLocaleString()}</strong> {clickedStatus.toLowerCase()} visits
-              </div>
-            )}
           </div>
         </div>
       </div>
