@@ -4,6 +4,13 @@ import {
   Brain, Sparkles, ChevronRight, ArrowRight
 } from 'lucide-react';
 import { getStats, getVisitsTrend, getRoleMetrics, getRMCombinedSales } from '../data/dataService';
+
+const money = value => {
+  const amount = Number(value) || 0;
+  return amount >= 100000
+    ? `₹ ${(amount / 100000).toFixed(1)}L`
+    : `₹ ${(amount / 1000).toFixed(1)}k`;
+};
 import {
   getVisitForecast, getAINarrativeInsights, getTeamHealthIndex,
   getStatePerformance, getHourlyDistribution, getBDRiskScores
@@ -51,7 +58,7 @@ const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
   const hourly   = getHourlyDistribution(filters.managerEmail, distTimeframe);
   const riskScores = getBDRiskScores(filters.managerEmail);
   const roleMetrics = getRoleMetrics(filters);
-  const rmSales = getRMCombinedSales();
+  const rmSales = getRMCombinedSales() || { ftdCount: 0, ftdRevenue: 0, mtdCount: 0, mtdRevenue: 0 };
 
   const isDark = theme === 'dark';
   const tc = isDark ? '#94a3b8' : '#64748b';
