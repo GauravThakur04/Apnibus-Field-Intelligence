@@ -8,7 +8,7 @@ import { getBDRiskScores } from '../data/aiEngine';
 
 const BDRankingLeaderboard = ({ managerId = null, onSelectCandidate }) => {
   const allData = getData() || { salespersons: [] };
-  const [rankBy, setRankBy] = useState('mtd_sales'); // mtd_sales | ftd_sales | ltd_sales | mtd_visits | attendance
+  const [rankBy, setRankBy] = useState('mtd_sales'); // mtd_sales | ftd_sales | mtd_visits | attendance
   const [searchQuery, setSearchQuery] = useState('');
 
   const riskScores = useMemo(() => getBDRiskScores(), []);
