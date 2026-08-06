@@ -597,7 +597,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-06-fast-parallel-fetch-v25';
+const DATA_MAPPING_VERSION = '2026-08-06-rm-ftd-sales-fix-v26';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -772,10 +772,11 @@ export const getStats = (filters = {}) => {
   const coverageCities = new Set(visits.map(v => (v.city || '').trim()).filter(c => c && c !== 'Other' && !c.match(/^[0-9A-Z]{4}\+[0-9A-Z]{3,4}$/))).size || 124;
   const totalDistance  = Math.round(mtdVisits * 4.2);
 
-  const totalFtdSales = salespersons.reduce((sum, s) => sum + (s.ftd_sales || 0), 0);
-  const totalFtdRevenue = salespersons.reduce((sum, s) => sum + (s.ftd_revenue || 0), 0);
-  const totalMtdSales = salespersons.reduce((sum, s) => sum + (s.mtd_sales || 0), 0);
-  const totalMtdRevenue = salespersons.reduce((sum, s) => sum + (s.mtd_revenue || 0), 0);
+  const rmSales = getRMCombinedSales();
+  const totalFtdSales = salespersons.reduce((sum, s) => sum + (s.ftd_sales || 0), 0) + rmSales.ftdCount;
+  const totalFtdRevenue = salespersons.reduce((sum, s) => sum + (s.ftd_revenue || 0), 0) + rmSales.ftdRevenue;
+  const totalMtdSales = salespersons.reduce((sum, s) => sum + (s.mtd_sales || 0), 0) + rmSales.mtdCount;
+  const totalMtdRevenue = salespersons.reduce((sum, s) => sum + (s.mtd_revenue || 0), 0) + rmSales.mtdRevenue;
   const attendanceMembers = salespersons.filter(s => Number.isFinite(s.mtd_attendance_pct));
   const avgAttendance = attendanceMembers.length
     ? Math.round(attendanceMembers.reduce((sum, s) => sum + s.mtd_attendance_pct, 0) / attendanceMembers.length)
@@ -953,6 +954,30 @@ export const getRoleMetrics = (filters = {}) => {
     const attendance = members.length
       ? Math.round(members.reduce((sum, p) => sum + (Number(p.mtd_attendance_pct) || 0), 0) / members.length)
       : 0;
+    let ftdSales = members.reduce((sum, p) => sum + (p.ftd_sales || 0), 0);
+    let ftdRevenue = members.reduce((sum, p) => sum + (p.ftd_revenue || 0), 0);
+    let mtdSales = members.reduce((sum, p) => sum + (p.mtd_sales || 0), 0);
+    let mtdRevenue = members.reduce((sum, p) => sum + (p.mtd_revenue || 0), 0);
+
+    if (role.key === 'Manager') {
+      const rmSalesMap = getRMCombinedSalesByManager();
+      if (managerId) {
+        const mgr = data.managers.find(m => m.id === managerId);
+        if (mgr && rmSalesMap[mgr.email]) {
+          ftdSales += rmSalesMap[mgr.email].ftdCount;
+          ftdRevenue += rmSalesMap[mgr.email].ftdRevenue;
+          mtdSales += rmSalesMap[mgr.email].mtdCount;
+          mtdRevenue += rmSalesMap[mgr.email].mtdRevenue;
+        }
+      } else {
+        const rmTotal = getRMCombinedSales();
+        ftdSales += rmTotal.ftdCount;
+        ftdRevenue += rmTotal.ftdRevenue;
+        mtdSales += rmTotal.mtdCount;
+        mtdRevenue += rmTotal.mtdRevenue;
+      }
+    }
+
     return {
       ...role,
       count: members.length,
@@ -960,10 +985,10 @@ export const getRoleMetrics = (filters = {}) => {
       mtdVisits,
       ftdVisits,
       cities: new Set(visits.filter(v => String(v.visit_date || '').startsWith(month)).map(v => v.city).filter(Boolean)).size,
-      ftdSales: members.reduce((sum, p) => sum + (p.ftd_sales || 0), 0),
-      ftdRevenue: members.reduce((sum, p) => sum + (p.ftd_revenue || 0), 0),
-      mtdSales: members.reduce((sum, p) => sum + (p.mtd_sales || 0), 0),
-      mtdRevenue: members.reduce((sum, p) => sum + (p.mtd_revenue || 0), 0),
+      ftdSales,
+      ftdRevenue,
+      mtdSales,
+      mtdRevenue,
       attendance,
     };
   });
