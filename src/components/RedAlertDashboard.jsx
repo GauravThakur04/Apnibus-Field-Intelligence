@@ -71,24 +71,36 @@ const AlertTile = ({ icon: Icon, color, bg, border, title, count, desc, active, 
 );
 
 /* ── Alert Row Card ─────────────────────────────────────── */
-const AlertRow = ({ color, icon: Icon, bd, meta1, meta2, badge, extraBadge }) => (
+const AlertRow = ({ color, icon: Icon, bd, operator, location, meta1, meta2, photo, badge, extraBadge }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: 14,
     padding: '12px 16px', borderRadius: 'var(--radius-md)',
     background: 'var(--bg-card)', border: '1px solid var(--border)',
     borderLeft: `4px solid ${color}`,
   }}>
-    <div style={{ width: 34, height: 34, borderRadius: 9, background: `${color}12`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      <Icon size={16} />
-    </div>
+    {photo ? (
+      <img src={photo} alt={operator || bd} style={{ width: 42, height: 42, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} onError={e => { e.target.style.display='none'; }} />
+    ) : (
+      <div style={{ width: 42, height: 42, borderRadius: 8, background: `${color}12`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={18} />
+      </div>
+    )}
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-heading)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{bd}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
+        <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-heading)' }}>{bd}</span>
+        {operator && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: color, background: `${color}12`, padding: '2px 8px', borderRadius: 6, border: `1px solid ${color}25` }}>
+            🏢 {operator}
+          </span>
+        )}
+      </div>
       <div style={{ fontSize: 11.5, color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <span>{meta1}</span>
+        {location && <span>📍 {location}</span>}
+        {meta1 && <span>{meta1}</span>}
         {meta2 && <span style={{ opacity: 0.7 }}>· {meta2}</span>}
       </div>
     </div>
-    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+    <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
       {badge}
       {extraBadge}
     </div>
@@ -239,8 +251,10 @@ const RedAlertDashboard = ({ globalFilters }) => {
                 {activeSection === 'short' && shortAlerts.map((v, i) => (
                   <AlertRow key={i} color={active.color} icon={Clock}
                     bd={v.bd_name}
+                    operator={v.company_name || v.operator_name}
+                    location={v.location || `${v.city || ''}, ${v.state || ''}`}
+                    photo={v.image_url || v.photo_url}
                     meta1={`${v.visit_date} · ${v._time}`}
-                    meta2={`${v.city}, ${v.state}`}
                     badge={<span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 20, background: 'rgba(244,63,94,0.1)', color: '#e11d48', fontWeight: 700, border: '1px solid rgba(244,63,94,0.25)' }}>{v._duration} min</span>}
                     extraBadge={<span className={`badge ${v.verify_status === 'SUCCESS' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: 10 }}>{v.verify_status === 'SUCCESS' ? 'Verified' : 'Pending'}</span>}
                   />
@@ -248,27 +262,34 @@ const RedAlertDashboard = ({ globalFilters }) => {
                 {activeSection === 'interval' && intervalAlerts.map((v, i) => (
                   <AlertRow key={i} color={active.color} icon={AlertTriangle}
                     bd={v.bd_name}
-                    meta1={`Shortest Meeting Interval: ${v._intervalMins} mins`}
-                    meta2={`${v.city}, ${v.state}`}
+                    operator={v.company_name || v.operator_name || 'Consecutive Operator'}
+                    location={v.location || `${v.city || ''}, ${v.state || ''}`}
+                    photo={v.image_url || v.photo_url}
+                    meta1={`Interval: ${v._intervalMins} mins`}
+                    meta2={`${v.visit_date} · ${v._time}`}
                     badge={<span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 20, background: 'rgba(14,165,233,0.1)', color: '#0284c7', fontWeight: 800, border: '1px solid rgba(14,165,233,0.25)' }}>⏱️ {v._intervalMins}m gap</span>}
-                    extraBadge={<span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Consecutive Operator</span>}
                   />
                 ))}
                 {activeSection === 'late' && lateAlerts.map((g, i) => (
                   <AlertRow key={i} color={active.color} icon={Sunrise}
                     bd={g.bd_name}
-                    meta1={g.visit_date}
-                    meta2={`${g.city}, ${g.state}`}
+                    operator={g.company_name || g.operator_name || 'First Day Visit'}
+                    location={g.location || `${g.city || ''}, ${g.state || ''}`}
+                    photo={g.image_url || g.photo_url}
+                    meta1={`Day Start: ${g._startDisplay}`}
+                    meta2={`Date: ${g.visit_date}`}
                     badge={<span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 20, background: 'rgba(245,158,11,0.1)', color: '#d97706', fontWeight: 700, border: '1px solid rgba(245,158,11,0.25)' }}>{g._startDisplay}</span>}
                   />
                 ))}
                 {activeSection === 'repeat' && repeatAlerts.map((g, i) => (
                   <AlertRow key={i} color={active.color} icon={RefreshCw}
                     bd={g.bd_name}
-                    meta1={`"${g.operator_name}"`}
-                    meta2={`${g.city}, ${g.state}`}
+                    operator={g.company_name || g.operator_name}
+                    location={g.location || `${g.city || ''}, ${g.state || ''}`}
+                    photo={g.image_url || g.photo_url}
+                    meta1={`Punched ${g.count} times across ${g.dates.length} days`}
+                    meta2={`Latest: ${g.dates[g.dates.length - 1]}`}
                     badge={<span style={{ fontSize: 12, padding: '3px 11px', borderRadius: 20, background: 'rgba(124,58,237,0.1)', color: '#7c3aed', fontWeight: 800, border: '1px solid rgba(124,58,237,0.25)' }}>{g.count}×</span>}
-                    extraBadge={<span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{g.dates.length} days</span>}
                   />
                 ))}
               </div>

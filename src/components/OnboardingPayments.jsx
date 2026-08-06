@@ -7,7 +7,7 @@ const OnboardingPayments = ({ theme }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterManager, setFilterManager] = useState('ALL');
   const [filterDate, setFilterDate] = useState('');
-  const [timeframe, setTimeframe] = useState('MTD');
+  const [timeframe, setTimeframe] = useState('FTD');
 
   const systemTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
   const DYNAMIC_MTD_MONTH = systemTodayStr.slice(0, 7);

@@ -58,7 +58,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const allData = getData() || { visits: [], salespersons: [], managers: [] };
   const [selectedBDName, setSelectedBDName] = useState(null);
   const [searchBD, setSearchBD] = useState('');
-  const [timeframe, setTimeframe] = useState('MTD'); // 'FTD' | 'MTD' | 'LTD' | 'CUSTOM'
+  const [timeframe, setTimeframe] = useState('FTD'); // 'FTD' | 'MTD' | 'LTD' | 'CUSTOM'
   const [customDate, setCustomDate] = useState('');
 
   const cfg = MANAGER_CONFIGS[managerEmail] || MANAGER_CONFIGS['rajnish.kumar@apnibus.com'] || DEFAULT_CONFIG;
@@ -240,17 +240,48 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
     return list;
   }, [mgrBDs, riskScores, searchBD, filteredOrders, filteredVisits]);
 
+  // Deduplicated and stably sorted BDs for the breakdown chart
+  const bdChartData = useMemo(() => {
+    const map = new Map();
+    (enrichedBDs || []).forEach(s => {
+      const full = (s.name || 'BD').trim();
+      if (!map.has(full)) {
+        map.set(full, {
+          name: full,
+          activeVisits: s.activeVisits || 0,
+          mtd_visits: s.mtd_visits || 0
+        });
+      } else {
+        const existing = map.get(full);
+        existing.activeVisits += (s.activeVisits || 0);
+        existing.mtd_visits += (s.mtd_visits || 0);
+      }
+    });
+
+    const list = Array.from(map.values());
+    // Sort deterministically by full name so bars remain in fixed order and never jump
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [enrichedBDs]);
+
   // Bar Chart for BD Visits
   const bdBarOpts = useMemo(() => ({
-    chart: { toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter,sans-serif' },
+    chart: { toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter,sans-serif', animations: { enabled: false } },
     colors: [cfg.color],
     plotOptions: { bar: { borderRadius: 5, horizontal: false, columnWidth: '55%' } },
     grid: { borderColor: gc, strokeDashArray: 4 },
-    xaxis: { categories: enrichedBDs.map(s => (s.name || 'BD').split(' ')[0]), labels: { style: { colors: tc, fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+    xaxis: {
+      categories: bdChartData.map(s => {
+        const parts = s.name.split(' ');
+        return parts.length > 1 ? `${parts[0]} ${parts[1][0]}.` : parts[0];
+      }),
+      labels: { style: { colors: tc, fontSize: '11px' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false }
+    },
     yaxis: { labels: { style: { colors: tc, fontSize: '10px' } } },
     tooltip: { theme },
     dataLabels: { enabled: false }
-  }), [cfg, isDark, gc, tc, theme, enrichedBDs]);
+  }), [cfg, isDark, gc, tc, theme, bdChartData]);
 
   // Donut Chart for Sales vs Service Punches
   const punchDonutOpts = useMemo(() => ({
@@ -525,16 +556,24 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
 
       {/* Analytics Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
-        {/* MTD Visits by BD */}
+        {/* FTD / MTD Visits by BD */}
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Team Member MTD Visit Breakdown</div>
-              <div className="card-subtitle">Comparing total visits logged per BD</div>
+              <div className="card-title">Team Member {timeframe === 'FTD' ? 'FTD' : 'MTD'} Visit Breakdown</div>
+              <div className="card-subtitle">Comparing total visits logged per BD ({timeframe === 'FTD' ? 'Today' : 'Month'})</div>
             </div>
           </div>
           <div className="card-body">
-            <ReactApexChart options={bdBarOpts} series={[{ name: 'MTD Visits', data: enrichedBDs.map(s => s.mtd_visits || 0) }]} type="bar" height={220} />
+            <ReactApexChart
+              options={bdBarOpts}
+              series={[{
+                name: timeframe === 'FTD' ? 'Today Visits' : 'MTD Visits',
+                data: bdChartData.map(s => timeframe === 'FTD' ? s.activeVisits : s.mtd_visits)
+              }]}
+              type="bar"
+              height={220}
+            />
           </div>
         </div>
 

@@ -40,7 +40,7 @@ const AIInsightCard = ({ insight }) => {
 
 const ExecutiveOverview = ({ filters, theme, onNavigate }) => {
   const [clickedState, setClickedState]   = useState(null);
-  const [distTimeframe, setDistTimeframe] = useState('MTD'); // 'FTD' | 'MTD' | 'LTD'
+  const [distTimeframe, setDistTimeframe] = useState('FTD'); // 'FTD' | 'MTD' | 'LTD'
 
   const stats    = getStats(filters);
   const trend    = getVisitsTrend(filters);

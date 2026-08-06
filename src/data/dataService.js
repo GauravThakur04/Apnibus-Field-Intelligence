@@ -1200,11 +1200,16 @@ export const getDuplicateOperatorAlerts = (filters = {}) => {
         state:              v.state,
         city:               v.city,
         manager_email:      v.manager_email,
+        location:           v.location || `${v.city || ''}, ${v.state || ''}`,
+        image_url:          v.image_url || v.photo_url || null,
         count:              0,
         dates:              []
       };
     }
     groups[key].count++;
+    if (!groups[key].image_url && (v.image_url || v.photo_url)) {
+      groups[key].image_url = v.image_url || v.photo_url;
+    }
     if (!groups[key].dates.includes(v.visit_date)) groups[key].dates.push(v.visit_date);
   });
 
