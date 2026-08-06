@@ -746,7 +746,14 @@ function applyFilters(visits, filters = {}) {
 
   if (managerId) {
     const mgr = currentData.managers.find(m => m.id === parseInt(managerId));
-    if (mgr) visits = visits.filter(v => v.manager_email === mgr.email);
+    if (mgr) {
+      const mgrBDNames = new Set(
+        (currentData.salespersons || [])
+          .filter(s => s.manager_email === mgr.email)
+          .map(s => (s.name || '').toLowerCase().trim())
+      );
+      visits = visits.filter(v => v.manager_email === mgr.email || (v.bd_name && mgrBDNames.has((v.bd_name || '').toLowerCase().trim())));
+    }
   }
   if (salespersonName) {
     visits = visits.filter(v => (v.bd_name || '').toLowerCase() === (salespersonName || '').toLowerCase());

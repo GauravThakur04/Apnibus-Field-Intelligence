@@ -20,10 +20,12 @@ class ErrorBoundary extends Component {
 
   handleReset = () => {
     try {
-      localStorage.removeItem('apnibus_dashboard_data');
       localStorage.clear();
+      sessionStorage.clear();
     } catch (_) {}
-    window.location.href = window.location.origin + window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('_r', String(Date.now()));
+    window.location.href = `${window.location.pathname}?${searchParams.toString()}`;
   };
 
   render() {

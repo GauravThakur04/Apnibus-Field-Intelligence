@@ -67,14 +67,23 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const tc = isDark ? '#94a3b8' : '#64748b';
   const gc = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(226,232,240,0.9)';
 
-  // Strictly filter to this manager
-  const mgrVisits = useMemo(() => {
-    return (allData?.visits || []).filter(v => v && v.manager_email === managerEmail);
-  }, [managerEmail, allData]);
-
   const mgrBDs = useMemo(() => {
     return (allData?.salespersons || []).filter(s => s && s.manager_email === managerEmail);
   }, [managerEmail, allData]);
+
+  const mgrBDNames = useMemo(() => {
+    return new Set(mgrBDs.map(s => (s.name || '').toLowerCase().trim()));
+  }, [mgrBDs]);
+
+  // Filter visits to this manager or any assigned team member
+  const mgrVisits = useMemo(() => {
+    return (allData?.visits || []).filter(v => {
+      if (!v) return false;
+      if (v.manager_email === managerEmail) return true;
+      if (v.bd_name && mgrBDNames.has((v.bd_name || '').toLowerCase().trim())) return true;
+      return false;
+    });
+  }, [managerEmail, mgrBDNames, allData]);
 
   // Helper dates derived dynamically from system calendar
   const systemTodayStr = useMemo(() => {
@@ -161,12 +170,15 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const stats = useMemo(() => {
     const mgrObj = (allData?.managers || []).find(m => m && m.email === managerEmail);
     const rawStats = getStats({ managerId: mgrObj?.id }) || {};
+    const todayVisits = mgrVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE).length;
+    const mtdVisits = mgrVisits.filter(v => (v.visit_date || '').startsWith(DYNAMIC_MTD_MONTH)).length;
     return {
       ...rawStats,
-      todayVisits: filteredVisits.filter(v => v.visit_date === DYNAMIC_TODAY_DATE).length,
+      todayVisits,
+      mtdVisits,
       activeToday: activeBdsCount
     };
-  }, [managerEmail, allData, filteredVisits, DYNAMIC_TODAY_DATE, activeBdsCount]);
+  }, [managerEmail, allData, mgrVisits, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH, activeBdsCount]);
 
   const roleMetrics = useMemo(() => {
     const mgrObj = (allData?.managers || []).find(m => m?.email === managerEmail);
@@ -244,7 +256,8 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
   const bdChartData = useMemo(() => {
     const map = new Map();
     (enrichedBDs || []).forEach(s => {
-      const full = (s.name || 'BD').trim();
+      if (!s || !s.name) return;
+      const full = String(s.name || 'BD').trim();
       if (!map.has(full)) {
         map.set(full, {
           name: full,
