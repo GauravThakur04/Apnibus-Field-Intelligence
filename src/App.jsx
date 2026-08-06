@@ -127,19 +127,31 @@ const App = () => {
     }
   }, [refreshing]);
 
-  // Fetch live CSV data on mount
+  // Fetch live CSV data on mount — show cached data immediately, refresh silently in background
   useEffect(() => {
+    let cancelled = false;
     const initLiveFetch = async () => {
+      // Show whatever is in cache right away (may be stale but better than blank)
+      handleDataChanged();
       try {
         await fetchLiveData();
-        handleDataChanged();
-        setLastRefreshed(new Date());
+        if (!cancelled) {
+          handleDataChanged();
+          setLastRefreshed(new Date());
+          setFetchError(null); // clear any old error on success
+        }
       } catch (err) {
-        console.error("Mount live fetch failed:", err);
-        setFetchError(err.message || String(err));
+        if (!cancelled) {
+          console.warn("Background fetch failed, using cached data:", err.message);
+          // Only show error if we have no visits at all
+          const d = getData ? getData() : null;
+          const hasData = d && d.visits && d.visits.length > 0;
+          if (!hasData) setFetchError(err.message || String(err));
+        }
       }
     };
     initLiveFetch();
+    return () => { cancelled = true; }; // React StrictMode cleanup
   }, []);
 
   // Auto-close mobile sidebar when switching tabs
