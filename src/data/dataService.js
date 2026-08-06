@@ -597,7 +597,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-06-cdn-proxy-rewrite-v24';
+const DATA_MAPPING_VERSION = '2026-08-06-fast-parallel-fetch-v25';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -1342,20 +1342,29 @@ const fetchCSVText = async (url) => {
   return await res.text();
 };
 
-// Wrapper kept for API compatibility — no artificial timeout, let the server decide
-const fetchCSVWithTimeout = async (url, _timeoutMs = 55000) => {
-  return fetchCSVText(url);
+const fetchCSVTextWithTimeout = async (url, timeoutMs = 8000) => {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const targetUrl = new URL(url);
+    const proxyUrl = `/api-live${targetUrl.pathname}${targetUrl.search}`;
+    const res = await fetch(proxyUrl, { signal: controller?.signal });
+    if (timer) clearTimeout(timer);
+    if (res.ok) return await res.text();
+    throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    if (timer) clearTimeout(timer);
+    throw err;
+  }
 };
 
 export const fetchLiveData = async () => {
   const onboardingUrl = 'https://data.apnibus.com/public/question/fe85fe32-ac30-499e-9c63-05804c72c4b6.csv';
   const salesUrl = 'https://data.apnibus.com/api/public/card/e5e96873-7f54-45d1-b2f4-b2ead7d322fc/query/csv';
-  // Public question exports accept CSV as well as XLSX. CSV keeps the browser refresh lightweight.
   const attendanceUrl = 'https://data.apnibus.com/public/question/6b88fc31-2a6b-45b3-8942-e78b1adde56d.csv';
   const locationsUrl = 'https://data.apnibus.com/public/question/befce31e-f208-4675-a559-19137d5b08ca.csv';
   
   const visitsUrls = {
-    // Manager-specific public visit exports supplied by the operations team.
     'sonu.mishra@apnibus.com': 'https://data.apnibus.com/public/question/c8a0771c-ec40-43d5-b23b-30b1b1b2375a.csv',
     'tarun.kumar@apnibus.com': 'https://data.apnibus.com/public/question/4d34c0fc-077c-44a6-b949-ebe9e36a1106.csv',
     'rajnish.kumar@apnibus.com': 'https://data.apnibus.com/public/question/7420d1dc-f628-4628-b7cf-0abcbfe37b64.csv',
@@ -1367,41 +1376,36 @@ export const fetchLiveData = async () => {
     window.__apnibus_diagnostics.error = null;
   }
   try {
-    const [onboardingRes, salesRes] = await Promise.all([
-      fetchCSVWithTimeout(onboardingUrl, 8000),
-      fetchCSVWithTimeout(salesUrl, 8000)
-    ]);
-    // A slow GPS export must never prevent sales and attendance from refreshing.
-    const [attendanceResult, locationsResult] = await Promise.allSettled([
-      fetchCSVWithTimeout(attendanceUrl, 25000),
-      fetchCSVWithTimeout(locationsUrl, 25000)
+    // Launch ALL 8 fetches concurrently in parallel at t = 0ms
+    const [
+      onboardingRes,
+      salesRes,
+      attendanceRes,
+      locationsRes,
+      sonuRes,
+      tarunRes,
+      rajnishRes,
+      rajwinderRes
+    ] = await Promise.allSettled([
+      fetchCSVText(onboardingUrl),
+      fetchCSVText(salesUrl),
+      fetchCSVText(attendanceUrl),
+      fetchCSVTextWithTimeout(locationsUrl, 8000), // Cap locations fetch at 8s so slow GPS logs never delay dashboard refresh
+      fetchCSVText(visitsUrls['sonu.mishra@apnibus.com']),
+      fetchCSVText(visitsUrls['tarun.kumar@apnibus.com']),
+      fetchCSVText(visitsUrls['rajnish.kumar@apnibus.com']),
+      fetchCSVText(visitsUrls['rajwinder.singh@apnibus.com'])
     ]);
 
-    const rawOnboarding = localParseCSV(onboardingRes);
-    const rawSales = localParseCSV(salesRes);
-    const rawAttendance = attendanceResult.status === 'fulfilled' ? localParseCSV(attendanceResult.value) : [];
-    const rawLocations = locationsResult.status === 'fulfilled' ? localParseCSV(locationsResult.value) : [];
+    const rawOnboarding = onboardingRes.status === 'fulfilled' ? localParseCSV(onboardingRes.value) : [];
+    const rawSales = salesRes.status === 'fulfilled' ? localParseCSV(salesRes.value) : [];
+    const rawAttendance = attendanceRes.status === 'fulfilled' ? localParseCSV(attendanceRes.value) : [];
+    const rawLocations = locationsRes.status === 'fulfilled' ? localParseCSV(locationsRes.value) : [];
 
-    let rawSonuVisits = [];
-    let rawTarunVisits = [];
-    let rawRajnishVisits = [];
-    let rawRajwinderVisits = [];
-
-    // Fetch visits in parallel but handle timeouts/failures individually
-    await Promise.all([
-      fetchCSVWithTimeout(visitsUrls['sonu.mishra@apnibus.com'], 55000)
-        .then(res => { rawSonuVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' })); })
-        .catch(e => console.warn("Failed/Timed out loading Sonu visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['tarun.kumar@apnibus.com'], 55000)
-        .then(res => { rawTarunVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' })); })
-        .catch(e => console.warn("Failed/Timed out loading Tarun visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['rajnish.kumar@apnibus.com'], 55000)
-        .then(res => { rawRajnishVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' })); })
-        .catch(e => console.warn("Failed/Timed out loading Rajnish visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['rajwinder.singh@apnibus.com'], 55000)
-        .then(res => { rawRajwinderVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajwinder.singh@apnibus.com' })); })
-        .catch(e => console.warn("Failed/Timed out loading Rajwinder visits, using fallback:", e))
-    ]);
+    const rawSonuVisits = sonuRes.status === 'fulfilled' ? localParseCSV(sonuRes.value).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' })) : [];
+    const rawTarunVisits = tarunRes.status === 'fulfilled' ? localParseCSV(tarunRes.value).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' })) : [];
+    const rawRajnishVisits = rajnishRes.status === 'fulfilled' ? localParseCSV(rajnishRes.value).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' })) : [];
+    const rawRajwinderVisits = rajwinderRes.status === 'fulfilled' ? localParseCSV(rajwinderRes.value).map(v => ({ ...v, manager_email: 'rajwinder.singh@apnibus.com' })) : [];
 
     const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits, ...rawRajwinderVisits];
 
