@@ -597,7 +597,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-05-full-visit-reconciliation-v22';
+const DATA_MAPPING_VERSION = '2026-08-06-mtd-proxy-filter-v23';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
