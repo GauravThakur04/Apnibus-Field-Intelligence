@@ -22,6 +22,8 @@ const MASTER_CANDIDATES = [
   { id: 60, name: 'mohd Ashique Hussain', mobile: '8102033141', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Patna', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 62, name: 'Shiva jaiswal', mobile: '9993020842', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Chhattisgarh', city: 'KCG', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 63, name: 'Santosh Kumar', mobile: '6305092153', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'ISA', state: 'Bihar', city: 'Jamui', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 72, name: 'MOHIT', mobile: '', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Business Development', state: 'Haryana', city: 'Gurgaon', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 73, name: 'Mannu Rai', mobile: '', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Business Development', state: 'Haryana', city: 'Rohtak', july_ach_pos_user: 0, july_ach_rev_user: 0 },
 
   // ─── TARUN KUMAR'S TEAM (Himachal & North) ───
   { id: 6, name: 'Tarun Kumar', mobile: '8194815508', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Regional Head', state: 'Haryana', city: 'Gurgaon', july_ach_pos_user: 2, july_ach_rev_user: 8500 },
@@ -42,6 +44,9 @@ const MASTER_CANDIDATES = [
   { id: 42, name: 'Haris Khan', mobile: '9399588962', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Madhya Pradesh', city: 'Bhopal', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 64, name: 'Pratap Bhanu', mobile: '9098063206', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Madhya Pradesh', city: 'Bhopal', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 65, name: 'Saurav Kumar', mobile: '8789480981', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'ISA', state: 'Uttar Pradesh', city: 'Noida', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 69, name: 'Manish Verma', mobile: '', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Business Development', state: 'Himachal Pradesh', city: 'Kangra', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 70, name: 'Mohan', mobile: '', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Business Development', state: 'Himachal Pradesh', city: 'Mandi', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 71, name: 'Rahul Kumar Uppal', mobile: '', manager_id: 553, manager_name: 'Tarun Kumar', manager_email: 'tarun.kumar@apnibus.com', role: 'Business Development', state: 'Himachal Pradesh', city: 'Una', july_ach_pos_user: 0, july_ach_rev_user: 0 },
 
   // ─── RAJNISH KUMAR'S TEAM (Rajasthan & Jharkhand) ───
   { id: 19, name: 'Rajnish Kumar', mobile: '9341643122', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Regional Head', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
@@ -56,6 +61,7 @@ const MASTER_CANDIDATES = [
   { id: 29, name: 'KULDEEP SINGH UDAWAT', mobile: '7852812254', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Udaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 66, name: 'Anand Singh Rathore', mobile: '7690944003', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Karauli', july_ach_pos_user: 0, july_ach_rev_user: 0 },
   { id: 67, name: 'Anup Yadav', mobile: '7878525355', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'ISA', state: 'Rajasthan', city: 'Alwar', july_ach_pos_user: 0, july_ach_rev_user: 0 },
+  { id: 68, name: 'Shiv Dayal', mobile: '', manager_id: 201, manager_name: 'Rajnish Kumar', manager_email: 'rajnish.kumar@apnibus.com', role: 'Business Development', state: 'Rajasthan', city: 'Jaipur', july_ach_pos_user: 0, july_ach_rev_user: 0 },
 
   // ─── RAJWINDER SINGH'S TEAM (Punjab) ───
   { id: 15, name: 'Rajwinder Singh', mobile: '8427364774', manager_id: 554, manager_name: 'Rajwinder Singh', manager_email: 'rajwinder.singh@apnibus.com', role: 'Regional Head', state: 'Punjab', city: 'Punjab', july_ach_pos_user: 0, july_ach_rev_user: 0 },
@@ -154,8 +160,20 @@ function formatToISODate(dateVal) {
 const CANDIDATE_NAME_ALIASES = {
   'amit rohilla': ['amit kumar'],
   'neeraj shrivastav': ['neeraj shrivastava'],
-  'manish bhati': ['manish bathi'],
+  'manish bhati': ['manish bathi', 'manish bhati'],
   'sandip kumar': ['sandeep kumar'],
+  'sukhdev singh': ['sukhdev singh'],
+  'anand kumar singh': ['anand kumar singh'], // CSV uses lower-case 's'
+  'birendra kumar': ['birendra kumar'],
+  'jeetu kumar prajapat': ['jeetu kumar prajapat'],
+  'manish verma': ['manish verma'],
+  'vivek kumar kaundal': ['vivek kumar kaundal'],
+  'ajay kumar': ['ajay kumar'],
+  'mohit': ['mohit'],
+  'mannu rai': ['mannu rai'],
+  'rahul kumar uppal': ['rahul kumar uppal'],
+  'shiv dayal': ['shiv dayal'],
+  'mohan': ['mohan'],
 };
 
 function recordMatchesCandidate(record, candidate) {
@@ -305,18 +323,61 @@ function sumOrdersLocal(records, candidate, aliases, DYNAMIC_MTD_MONTH, DYNAMIC_
 function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_DATE, DYNAMIC_MTD_MONTH, rawAttendance = [], rawLocations = []) {
   const salesOrderRecords = rawSales.map(r => ({ ...r, _source: 'sales' }));
   const onboardingOrderRecords = rawOnboarding.map(r => ({ ...r, _source: 'onboarding' }));
-  const paymentCandidateResolver = record => resolveCandidateForPayment(record, MASTER_CANDIDATES);
+  
+  const CANONICAL_ALIASES = {
+    'amit kumar': 'Amit Rohilla',
+    'neeraj shrivastava': 'Neeraj Shrivastav',
+    'manish bathi': 'Manish Bhati',
+    'sandeep kumar': 'Sandip Kumar',
+    'sukhdev singh': 'SUKHDEV SINGH'
+  };
 
-  const activeBDNames = new Set(MASTER_CANDIDATES.map(s => s.name.toLowerCase().trim()));
+  // Unified candidate map starting with MASTER_CANDIDATES
+  const candidateMap = new Map();
+  MASTER_CANDIDATES.forEach(c => {
+    candidateMap.set(c.name.toLowerCase().trim(), { ...c });
+  });
+
+  // Auto-register any unlisted candidates from visit CSVs
+  let nextAutoId = 2000;
+  allVisits.forEach(v => {
+    const rawName = (v.bd_name || v.name || '').trim();
+    if (!rawName) return;
+    const normName = rawName.toLowerCase().trim();
+    const canonicalName = CANONICAL_ALIASES[normName] || rawName;
+    const canonLower = canonicalName.toLowerCase().trim();
+
+    if (!candidateMap.has(canonLower)) {
+      const mgrEmail = String(v.manager_email || '').trim();
+      const mgr = MANAGERS.find(m => m.email === mgrEmail) || MANAGERS[0];
+      candidateMap.set(canonLower, {
+        id: nextAutoId++,
+        name: canonicalName,
+        mobile: '',
+        manager_id: mgr.id,
+        manager_name: mgr.name,
+        manager_email: mgr.email,
+        role: 'Business Development',
+        state: mgr.state || 'Delhi-NCR',
+        city: mgr.city || 'Gurgaon',
+        july_ach_pos_user: 0,
+        july_ach_rev_user: 0
+      });
+    }
+  });
+
+  const allCandidates = Array.from(candidateMap.values());
+  const paymentCandidateResolver = record => resolveCandidateForPayment(record, allCandidates);
+  const activeBDNames = new Set(allCandidates.map(s => s.name.toLowerCase().trim()));
 
   const compiledVisits = allVisits
     .map(v => {
       const rawVisitDate = v.visit_date || v.date || v.created_on || v.visitDate || '';
       let visit_date = formatToISODate(rawVisitDate);
-      let name = (v.bd_name || '').trim();
-      if (name.toLowerCase() === 'amit kumar') {
-        name = 'Amit Rohilla';
-      }
+      let rawName = (v.bd_name || '').trim();
+      let normName = rawName.toLowerCase().trim();
+      let name = CANONICAL_ALIASES[normName] || rawName;
+
       return {
         ...v,
         bd_name: name,
@@ -377,7 +438,7 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
       };
     });
 
-  const salespersons = MASTER_CANDIDATES.map(c => {
+  const salespersons = allCandidates.map(c => {
     const nameLower = c.name.toLowerCase().trim();
     
     const aliases = new Set();
@@ -536,7 +597,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-04-rm-sales-email-match-v20';
+const DATA_MAPPING_VERSION = '2026-08-05-full-visit-reconciliation-v22';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -657,9 +718,9 @@ export { fmtTime };
 function applyFilters(visits, filters = {}) {
   const { managerId, salespersonName, dateRange, state, bdSearch } = filters;
 
-  // Filter visits strictly to candidates in salespersons list (our 21 active BDs)
-  const activeBDNames = (currentData.salespersons || []).map(s => s.name.toLowerCase().trim());
-  visits = visits.filter(v => activeBDNames.includes((v.bd_name || '').toLowerCase().trim()));
+  // Filter visits strictly to candidates in salespersons list
+  const activeBDNames = new Set((currentData.salespersons || []).map(s => s.name.toLowerCase().trim()));
+  visits = visits.filter(v => activeBDNames.has((v.bd_name || '').toLowerCase().trim()));
 
   if (managerId) {
     const mgr = currentData.managers.find(m => m.id === parseInt(managerId));
