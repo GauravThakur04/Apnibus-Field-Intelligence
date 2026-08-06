@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     const filtered = filterCSVToMonth(csvText, currentMonth);
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=300');
     res.setHeader('Access-Control-Allow-Origin', '*');
     
     const rowCount = (filtered.match(/\n/g) || []).length;
