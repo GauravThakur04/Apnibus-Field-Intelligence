@@ -237,6 +237,10 @@ const App = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
+        if (currentManagerParam === 'rajnish')   return <ManagerTeamDashboard managerEmail="rajnish.kumar@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'tarun')     return <ManagerTeamDashboard managerEmail="tarun.kumar@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'sonu')      return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'rajwinder') return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
         return <ExecutiveOverview filters={globalFilters} theme={theme} onNavigate={setActiveTab} />;
 
       case 'onboarding':
@@ -256,6 +260,10 @@ const App = () => {
         return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
 
       case 'managers':
+        if (currentManagerParam === 'rajnish')   return <ManagerTeamDashboard managerEmail="rajnish.kumar@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'tarun')     return <ManagerTeamDashboard managerEmail="tarun.kumar@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'sonu')      return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'rajwinder') return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
         return <ManagerPerformance />;
 
       case 'candidates':
@@ -297,6 +305,10 @@ const App = () => {
         return <RedAlertDashboard globalFilters={globalFilters} />;
 
       default:
+        if (currentManagerParam === 'rajnish')   return <ManagerTeamDashboard managerEmail="rajnish.kumar@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'tarun')     return <ManagerTeamDashboard managerEmail="tarun.kumar@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'sonu')      return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
+        if (currentManagerParam === 'rajwinder') return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
         return <ExecutiveOverview filters={globalFilters} theme={theme} onNavigate={setActiveTab} />;
     }
   };

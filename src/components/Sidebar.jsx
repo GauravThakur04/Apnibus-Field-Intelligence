@@ -57,7 +57,8 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
       <div className="sidebar-content">
         
         {/* Executive Link (Hidden in Manager Mode, or available as back link) */}
-        {!isManagerPortal ? (
+        {/* Main Executive Portal Link (Only shown for Executive users) */}
+        {!isManagerPortal && (
           <div className="sidebar-section">
             <div className="sidebar-section-label">Main Executive Portal</div>
             <div
@@ -69,20 +70,6 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
             >
               <LayoutDashboard size={16} />
               <span style={{ flex: 1 }}>Executive Overview</span>
-            </div>
-          </div>
-        ) : (
-          <div className="sidebar-section">
-            <div
-              className="nav-item"
-              onClick={() => {
-                try { window.history.pushState({}, '', window.location.pathname); } catch (_) {}
-                setActiveTab('overview');
-              }}
-              style={{ background: 'var(--bg-input)', fontSize: 12 }}
-            >
-              <ArrowLeft size={14} />
-              <span style={{ flex: 1 }}>Switch to Head Portal</span>
             </div>
           </div>
         )}
