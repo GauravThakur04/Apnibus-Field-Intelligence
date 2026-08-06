@@ -612,7 +612,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-06-rm-ftd-sales-fix-v26';
+const DATA_MAPPING_VERSION = '2026-08-06-removed-bds-fix-v27';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -654,6 +654,13 @@ export const getData = () => {
     };
     try { localStorage.setItem('apnibus_dashboard_data', JSON.stringify(currentData)); } catch (_) {}
   }
+
+  if (currentData && Array.isArray(currentData.salespersons)) {
+    currentData.salespersons = currentData.salespersons.filter(
+      sp => !REMOVED_BD_NAMES.has((sp.name || '').toLowerCase().trim())
+    );
+  }
+
   return currentData || enrichInitialRawData(rawData);
 };
 
