@@ -20,16 +20,73 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Follow redirects and decompress response, returning plain CSV text
   try {
     const csvText = await fetchFollowRedirects(targetUrl.toString(), 5);
+
+    // ── MTD filter: keep only header + rows for current month ──
+    // Current month in IST (UTC+5:30)
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const currentMonth = `${nowIST.getUTCFullYear()}-${String(nowIST.getUTCMonth() + 1).padStart(2, '0')}`; // e.g. "2026-08"
+
+    const filtered = filterCSVToMonth(csvText, currentMonth);
+
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.status(200).send(csvText);
+    res.status(200).send(filtered);
   } catch (err) {
     res.status(502).json({ error: 'Proxy failed', details: err.message });
   }
+}
+
+/**
+ * Filter a CSV string to only include rows where the visit_date column
+ * starts with the given month prefix (YYYY-MM).
+ * Always returns the header row regardless.
+ */
+function filterCSVToMonth(csvText, monthPrefix) {
+  const lines = csvText.split('\n');
+  if (lines.length === 0) return csvText;
+
+  const header = lines[0];
+  // Find visit_date column index
+  const headers = parseCSVLine(header);
+  const dateIdx = headers.findIndex(h =>
+    h.replace(/"/g, '').trim().toLowerCase() === 'visit_date'
+  );
+
+  if (dateIdx === -1) {
+    // No visit_date column found — return as-is (sales/onboarding CSVs)
+    return csvText;
+  }
+
+  const filteredLines = [header];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    const cols = parseCSVLine(line);
+    const dateVal = (cols[dateIdx] || '').replace(/"/g, '').trim();
+    if (dateVal.startsWith(monthPrefix)) {
+      filteredLines.push(line);
+    }
+  }
+
+  return filteredLines.join('\n');
+}
+
+/** Minimal CSV line splitter (handles quoted commas) */
+function parseCSVLine(line) {
+  const cols = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; cur += c; }
+    else if (c === ',' && !inQ) { cols.push(cur); cur = ''; }
+    else cur += c;
+  }
+  cols.push(cur);
+  return cols;
 }
 
 function fetchFollowRedirects(url, maxRedirects) {
@@ -45,34 +102,32 @@ function fetchFollowRedirects(url, maxRedirects) {
         headers: {
           'User-Agent': 'ApniBus-Vercel-Proxy/2.0',
           'Accept': 'text/csv,*/*',
-          // Request plain text — no compression so we can read it directly
-          'Accept-Encoding': 'identity',
+          'Accept-Encoding': 'identity', // plain text — no gzip compression
         }
       };
 
-      const req = lib.request(options, (res) => {
+      const req = lib.request(options, (proxyRes) => {
         // Follow redirects
-        if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+        if ([301, 302, 303, 307, 308].includes(proxyRes.statusCode) && proxyRes.headers.location) {
           if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
-          const nextUrl = res.headers.location.startsWith('http')
-            ? res.headers.location
-            : new URL(res.headers.location, reqUrl).toString();
-          // Drain the redirect response body
-          res.resume();
+          const nextUrl = proxyRes.headers.location.startsWith('http')
+            ? proxyRes.headers.location
+            : new URL(proxyRes.headers.location, reqUrl).toString();
+          proxyRes.resume();
           return doRequest(nextUrl, redirectsLeft - 1);
         }
 
-        if (res.statusCode !== 200) {
-          res.resume();
-          return reject(new Error(`HTTP ${res.statusCode} from ${reqUrl}`));
+        if (proxyRes.statusCode !== 200) {
+          proxyRes.resume();
+          return reject(new Error(`HTTP ${proxyRes.statusCode} from ${reqUrl}`));
         }
 
-        // Handle any compression that slipped through
-        const encoding = (res.headers['content-encoding'] || '').toLowerCase();
-        let stream = res;
-        if (encoding === 'gzip') stream = res.pipe(zlib.createGunzip());
-        else if (encoding === 'deflate') stream = res.pipe(zlib.createInflate());
-        else if (encoding === 'br') stream = res.pipe(zlib.createBrotliDecompress());
+        // Decompress if needed
+        const encoding = (proxyRes.headers['content-encoding'] || '').toLowerCase();
+        let stream = proxyRes;
+        if (encoding === 'gzip') stream = proxyRes.pipe(zlib.createGunzip());
+        else if (encoding === 'deflate') stream = proxyRes.pipe(zlib.createInflate());
+        else if (encoding === 'br') stream = proxyRes.pipe(zlib.createBrotliDecompress());
 
         const chunks = [];
         stream.on('data', chunk => chunks.push(chunk));
@@ -81,7 +136,7 @@ function fetchFollowRedirects(url, maxRedirects) {
       });
 
       req.on('error', reject);
-      req.setTimeout(55000, () => { req.destroy(); reject(new Error('Request timeout')); });
+      req.setTimeout(55000, () => { req.destroy(); reject(new Error('Request timeout after 55s')); });
       req.end();
     };
 
