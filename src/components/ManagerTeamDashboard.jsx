@@ -352,7 +352,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
             Team Metrics Summary
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-            {customDate ? `Showing metrics for selected date: ${customDate}` : `Showing metrics for timeframe: ${timeframe === 'FTD' ? 'Today (FTD)' : timeframe === 'MTD' ? 'Month (MTD)' : 'All-Time (LTD)'}`}
+            {customDate ? `Showing metrics for selected date: ${customDate}` : `Showing metrics for timeframe: ${timeframe === 'FTD' ? 'Today (FTD)' : 'Month (MTD)'}`}
           </div>
         </div>
 
@@ -471,7 +471,7 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
                     </div>
                     {!isManager && (
                       <div style={{ fontSize: 11, color: '#10b981', fontWeight: 800, marginTop: 1 }}>
-                        {customDate ? 'Onboarding (Date)' : timeframe === 'FTD' ? 'Onboarding (Today)' : timeframe === 'LTD' ? 'Onboarding (LTD)' : 'Onboarding (MTD)'}: {sp.activeRevenue >= 100000 ? `₹ ${(sp.activeRevenue / 100000).toFixed(1)} L` : `₹ ${(sp.activeRevenue / 1000).toFixed(1)}k`}
+                        {customDate ? 'Onboarding (Date)' : timeframe === 'FTD' ? 'Onboarding (Today)' : 'Onboarding (MTD)'}: {sp.activeRevenue >= 100000 ? `₹ ${(sp.activeRevenue / 100000).toFixed(1)} L` : `₹ ${(sp.activeRevenue / 1000).toFixed(1)}k`}
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
