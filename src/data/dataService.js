@@ -327,10 +327,27 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
     'sukhdev singh': 'SUKHDEV SINGH'
   };
 
+const REMOVED_BD_NAMES = new Set([
+  'rahul kumar uppal',
+  'rahul uppal',
+  'vivek kumar kaundal',
+  'vivek kaundal',
+  'arshdeep singh',
+  'arshdeep',
+  'mohit',
+  'suraj kumar dubey',
+  'suraj dubey',
+  'karan raina',
+  'shiv dayal'
+]);
+
   // Unified candidate map starting with MASTER_CANDIDATES
   const candidateMap = new Map();
   MASTER_CANDIDATES.forEach(c => {
-    candidateMap.set(c.name.toLowerCase().trim(), { ...c });
+    const n = c.name.toLowerCase().trim();
+    if (!REMOVED_BD_NAMES.has(n)) {
+      candidateMap.set(n, { ...c });
+    }
   });
 
   // Auto-register any unlisted candidates from visit CSVs
@@ -341,6 +358,8 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
     const normName = rawName.toLowerCase().trim();
     const canonicalName = CANONICAL_ALIASES[normName] || rawName;
     const canonLower = canonicalName.toLowerCase().trim();
+
+    if (REMOVED_BD_NAMES.has(canonLower) || REMOVED_BD_NAMES.has(normName)) return;
 
     if (!candidateMap.has(canonLower)) {
       const mgrEmail = String(v.manager_email || '').trim();
@@ -361,7 +380,8 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
     }
   });
 
-  const allCandidates = Array.from(candidateMap.values());
+  const allCandidates = Array.from(candidateMap.values())
+    .filter(c => !REMOVED_BD_NAMES.has((c.name || '').toLowerCase().trim()));
   const paymentCandidateResolver = record => resolveCandidateForPayment(record, allCandidates);
   const activeBDNames = new Set(allCandidates.map(s => s.name.toLowerCase().trim()));
 
