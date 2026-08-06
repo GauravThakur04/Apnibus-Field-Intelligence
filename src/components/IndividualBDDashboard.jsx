@@ -22,7 +22,6 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
       productivity_score: 85,
       mtd_visits: 45,
       today_visits: 2,
-      ltd_visits: 120,
       verified_percent: 88,
       user_id: 14,
       attendance_rate: 85,
@@ -36,10 +35,16 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
     };
   }, [bdName, allData]);
 
-  // All visits for this candidate
+  // MTD + FTD visits for this candidate (no LTD)
+  const systemTodayStr = useMemo(() => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }), []);
+  const currentMonth = useMemo(() => systemTodayStr.slice(0, 7), [systemTodayStr]);
+
   const candidateVisits = useMemo(() => {
-    return allData.visits.filter(v => (v.bd_name || '').toLowerCase() === (candidate.name || '').toLowerCase());
-  }, [candidate, allData]);
+    return allData.visits.filter(v =>
+      (v.bd_name || '').toLowerCase() === (candidate.name || '').toLowerCase() &&
+      (v.visit_date || '').startsWith(currentMonth)
+    );
+  }, [candidate, allData, currentMonth]);
 
   const dateLabelsMap = useMemo(() => {
     const map = {};
@@ -141,7 +146,7 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
             </div>
           </div>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.08)', padding: '6px 14px', borderRadius: 8 }}>
-            Total Onboarding Payment: ₹ {(candidate.ltd_revenue || 0).toLocaleString()}
+            MTD Onboarding Payment: ₹ {(candidate.onboarding_payment_mtd || candidate.mtd_revenue || 0).toLocaleString()}
           </div>
         </div>
 
@@ -294,7 +299,7 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
           {/* Visited Operators List */}
           <div className="card" style={{ padding: '20px 22px' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 14 }}>
-              Visited Bus Operators ({candidateVisits.length})
+              MTD Visited Bus Operators ({candidateVisits.length})
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 300, overflowY: 'auto' }}>
               {candidateVisits.slice(0, 15).map((v, i) => (
