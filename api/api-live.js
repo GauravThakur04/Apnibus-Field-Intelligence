@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    // Tell client how many rows survived the filter (for debugging)
+    
     const rowCount = (filtered.match(/\n/g) || []).length;
     res.setHeader('X-MTD-Rows', String(rowCount));
     res.setHeader('X-MTD-Month', currentMonth);
@@ -56,11 +56,6 @@ export default async function handler(req, res) {
   }
 }
 
-/**
- * Dynamically detect the date column in the CSV and filter rows to current month.
- * Tries all known date column names — filters on the first one found.
- * If no date column is found, returns all rows unchanged (safe fallback).
- */
 function filterCSVToMonth(csvText, monthPrefix) {
   const lines = csvText.split('\n');
   if (lines.length < 2) return csvText;
@@ -68,7 +63,6 @@ function filterCSVToMonth(csvText, monthPrefix) {
   const headerLine = lines[0];
   const headers = parseCSVLine(headerLine).map(h => h.replace(/"/g, '').trim().toLowerCase());
 
-  // Find the first matching date column
   let dateIdx = -1;
   let foundColName = '';
   for (const colName of DATE_COLUMN_NAMES) {
@@ -81,15 +75,10 @@ function filterCSVToMonth(csvText, monthPrefix) {
   }
 
   if (dateIdx === -1) {
-    // No date column found — return as-is (e.g. locations CSV has no dates)
     return csvText;
   }
 
-  console.log(`[MTD Filter] Column="${foundColName}" idx=${dateIdx} month=${monthPrefix}`);
-
   const filteredLines = [headerLine];
-  let kept = 0, skipped = 0;
-
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line.trim()) continue;
@@ -97,20 +86,13 @@ function filterCSVToMonth(csvText, monthPrefix) {
     const cols = parseCSVLine(line);
     const dateVal = (cols[dateIdx] || '').replace(/"/g, '').trim();
 
-    // Keep row if date starts with current month OR if date is empty (avoid losing non-dated rows)
     if (!dateVal || dateVal.startsWith(monthPrefix)) {
       filteredLines.push(line);
-      kept++;
-    } else {
-      skipped++;
     }
   }
-
-  console.log(`[MTD Filter] Kept=${kept} Skipped=${skipped} Total=${kept + skipped}`);
   return filteredLines.join('\n');
 }
 
-/** Minimal CSV line splitter — handles quoted commas correctly */
 function parseCSVLine(line) {
   const cols = [];
   let cur = '';
@@ -138,12 +120,11 @@ function fetchFollowRedirects(url, maxRedirects) {
         headers: {
           'User-Agent': 'ApniBus-Vercel-Proxy/3.0',
           'Accept': 'text/csv,*/*',
-          'Accept-Encoding': 'identity', // no gzip — plain text only
+          'Accept-Encoding': 'identity',
         }
       };
 
       const req = lib.request(options, (proxyRes) => {
-        // Follow redirects (Metabase uses 302)
         if ([301, 302, 303, 307, 308].includes(proxyRes.statusCode) && proxyRes.headers.location) {
           if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
           const nextUrl = proxyRes.headers.location.startsWith('http')
@@ -158,7 +139,6 @@ function fetchFollowRedirects(url, maxRedirects) {
           return reject(new Error(`HTTP ${proxyRes.statusCode} from ${reqUrl}`));
         }
 
-        // Decompress if Metabase sends compressed response anyway
         const encoding = (proxyRes.headers['content-encoding'] || '').toLowerCase();
         let stream = proxyRes;
         if (encoding === 'gzip')    stream = proxyRes.pipe(zlib.createGunzip());
