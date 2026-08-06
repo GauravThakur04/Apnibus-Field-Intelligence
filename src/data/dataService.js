@@ -1394,16 +1394,16 @@ export const fetchLiveData = async () => {
 
     // Fetch visits in parallel but handle timeouts/failures individually
     await Promise.all([
-      fetchCSVWithTimeout(visitsUrls['sonu.mishra@apnibus.com'], 25000)
+      fetchCSVWithTimeout(visitsUrls['sonu.mishra@apnibus.com'], 55000)
         .then(res => { rawSonuVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' })); })
         .catch(e => console.warn("Failed/Timed out loading Sonu visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['tarun.kumar@apnibus.com'], 25000)
+      fetchCSVWithTimeout(visitsUrls['tarun.kumar@apnibus.com'], 55000)
         .then(res => { rawTarunVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' })); })
         .catch(e => console.warn("Failed/Timed out loading Tarun visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['rajnish.kumar@apnibus.com'], 25000)
+      fetchCSVWithTimeout(visitsUrls['rajnish.kumar@apnibus.com'], 55000)
         .then(res => { rawRajnishVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' })); })
         .catch(e => console.warn("Failed/Timed out loading Rajnish visits, using fallback:", e)),
-      fetchCSVWithTimeout(visitsUrls['rajwinder.singh@apnibus.com'], 25000)
+      fetchCSVWithTimeout(visitsUrls['rajwinder.singh@apnibus.com'], 55000)
         .then(res => { rawRajwinderVisits = localParseCSV(res).map(v => ({ ...v, manager_email: 'rajwinder.singh@apnibus.com' })); })
         .catch(e => console.warn("Failed/Timed out loading Rajwinder visits, using fallback:", e))
     ]);
