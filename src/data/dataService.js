@@ -7,6 +7,20 @@ const MANAGERS = [
   { id: 201, name: 'Rajnish Kumar', email: 'rajnish.kumar@apnibus.com', role: 'Regional Head', state: 'RJ', city: 'Jaipur', color: '#2563eb' }
 ];
 
+const REMOVED_BD_NAMES = new Set([
+  'rahul kumar uppal',
+  'rahul uppal',
+  'vivek kumar kaundal',
+  'vivek kaundal',
+  'arshdeep singh',
+  'arshdeep',
+  'mohit',
+  'suraj kumar dubey',
+  'suraj dubey',
+  'karan raina',
+  'shiv dayal'
+]);
+
 const MASTER_CANDIDATES = [
   // ─── SONU MISHRA'S TEAM (Haryana & NCR) ───
   { id: 1, name: 'Sonu Mishra', mobile: '8750710855', manager_id: 552, manager_name: 'Sonu Mishra', manager_email: 'sonu.mishra@apnibus.com', role: 'Regional Head', state: 'Haryana', city: 'Gurgaon', july_ach_pos_user: 25, july_ach_rev_user: 43200 },
@@ -326,20 +340,6 @@ function compileSalespersons(rawSales, rawOnboarding, allVisits, DYNAMIC_TODAY_D
     'sandeep kumar': 'Sandip Kumar',
     'sukhdev singh': 'SUKHDEV SINGH'
   };
-
-const REMOVED_BD_NAMES = new Set([
-  'rahul kumar uppal',
-  'rahul uppal',
-  'vivek kumar kaundal',
-  'vivek kaundal',
-  'arshdeep singh',
-  'arshdeep',
-  'mohit',
-  'suraj kumar dubey',
-  'suraj dubey',
-  'karan raina',
-  'shiv dayal'
-]);
 
   // Unified candidate map starting with MASTER_CANDIDATES
   const candidateMap = new Map();
