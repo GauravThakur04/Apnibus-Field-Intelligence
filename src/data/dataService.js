@@ -1323,33 +1323,28 @@ function localParseCSV(csvText) {
 
 
 
-const fetchCSVText = async (url, signal = null) => {
+// Fetch a CSV — tries proxy first, falls back to direct fetch.
+// No AbortController timeout: Vercel's 60s function limit is the real ceiling.
+const fetchCSVText = async (url) => {
   if (import.meta.env.DEV) {
+    // Local dev: use Vite proxy to avoid CORS
     const targetUrl = new URL(url);
     const proxyUrl = `/api-live${targetUrl.pathname}${targetUrl.search}`;
-    const res = await fetch(proxyUrl, { signal });
+    const res = await fetch(proxyUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${proxyUrl}`);
     return await res.text();
   }
 
-  // Proxy through a serverless route to follow Metabase redirects and avoid CORS issues.
+  // Production (Vercel): use serverless proxy which handles redirects + decompression
   const proxyUrl = `/api/api-live?target=${encodeURIComponent(url)}&_cb=${Date.now()}`;
-  const res = await fetch(proxyUrl, { signal });
+  const res = await fetch(proxyUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${proxyUrl}`);
   return await res.text();
 };
 
-const fetchCSVWithTimeout = async (url, timeoutMs = 8000) => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetchCSVText(url, controller.signal);
-    clearTimeout(id);
-    return res;
-  } catch (err) {
-    clearTimeout(id);
-    throw err;
-  }
+// Wrapper kept for API compatibility — no artificial timeout, let the server decide
+const fetchCSVWithTimeout = async (url, _timeoutMs = 55000) => {
+  return fetchCSVText(url);
 };
 
 export const fetchLiveData = async () => {
