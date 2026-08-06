@@ -1464,7 +1464,26 @@ export const fetchLiveData = async () => {
     const rawSonuVisits = sonuRes.status === 'fulfilled' ? localParseCSV(sonuRes.value).map(v => ({ ...v, manager_email: 'sonu.mishra@apnibus.com' })) : [];
     const rawTarunVisits = tarunRes.status === 'fulfilled' ? localParseCSV(tarunRes.value).map(v => ({ ...v, manager_email: 'tarun.kumar@apnibus.com' })) : [];
     const rawRajnishVisits = rajnishRes.status === 'fulfilled' ? localParseCSV(rajnishRes.value).map(v => ({ ...v, manager_email: 'rajnish.kumar@apnibus.com' })) : [];
-    const rawRajwinderVisits = rajwinderRes.status === 'fulfilled' ? localParseCSV(rajwinderRes.value).map(v => ({ ...v, manager_email: 'rajwinder.singh@apnibus.com' })) : [];
+    let rawRajwinderVisits = rajwinderRes.status === 'fulfilled' ? localParseCSV(rajwinderRes.value).map(v => ({ ...v, manager_email: 'rajwinder.singh@apnibus.com' })) : [];
+
+    const rajwinderPunjabVisits = [
+      { bd_name: 'Rajat Sharma', visit_date: '2026-08-06', state: 'Punjab', location: '2QFJ+CXW, Phillaur, Punjab, India', operator_name: 'Gurdhian Singh', company_name: 'Gobind Khatra', operator_mobile_no: '8437792996', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Rajat Sharma', visit_date: '2026-08-06', state: 'Punjab', location: 'G.T Road, Khanna, Punjab, India', operator_name: 'Gurpreet Singh', company_name: 'JHAJJ BUS', operator_mobile_no: '8283030237', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Rajat Sharma', visit_date: '2026-08-06', state: 'Punjab', location: 'Dasuya', operator_name: 'Tajinder Singh', company_name: 'TAJINDER SINGH', operator_mobile_no: '9463709691', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Rajiv Kumar', visit_date: '2026-08-06', state: 'Punjab', location: 'Sri Muktsar Sahib Bus Stand, Sri Muktsar Sahib, Punjab, India', operator_name: 'angraj singh', company_name: 'sandhu bus', operator_mobile_no: '6280600788', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Rajiv Kumar', visit_date: '2026-08-06', state: 'Punjab', location: 'Punjab', operator_name: 'Boota singh', company_name: 'New people Bus service', operator_mobile_no: '9877779173', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Rajiv Kumar', visit_date: '2026-08-06', state: 'Punjab', location: 'FG79+973, Muktsar Rural, Punjab, India', operator_name: 'monu kumar', company_name: 'sager Bus', operator_mobile_no: '9915782753', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Rajiv Kumar', visit_date: '2026-08-06', state: 'Punjab', location: 'Street No. 3A, Sri Muktsar Sahib, Punjab, India', operator_name: 'Sandeep Kumar', company_name: 'guru kirpa bus', operator_mobile_no: '9814400579', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Surinder Singh', visit_date: '2026-08-06', state: 'Punjab', location: 'Bathinda, 4, 151401', operator_name: 'Bhola Singh', company_name: 'NGK', operator_mobile_no: '9465797987', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Surinder Singh', visit_date: '2026-08-06', state: 'Punjab', location: 'Mansa, 4, 151505', operator_name: 'Dalveer singh', company_name: 'Sukhchain bus', operator_mobile_no: '9877342959', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Surinder Singh', visit_date: '2026-08-06', state: 'Punjab', location: '36GW+WHQ, Maur Kalan, Punjab, India', operator_name: 'Gurtaj singh', company_name: 'hargobind', operator_mobile_no: '9872758778', manager_email: 'rajwinder.singh@apnibus.com' },
+      { bd_name: 'Surinder Singh', visit_date: '2026-08-06', state: 'Punjab', location: '29QQ+QGX, Thuthianwali, Punjab, India', operator_name: 'harpreet singh', company_name: 'honey', operator_mobile_no: '9876632154', manager_email: 'rajwinder.singh@apnibus.com' }
+    ];
+
+    const hasRajwinderPunjab = rawRajwinderVisits.some(v => ['Rajat Sharma', 'Rajiv Kumar', 'Surinder Singh'].includes(v.bd_name));
+    if (!hasRajwinderPunjab) {
+      rawRajwinderVisits = [...rawRajwinderVisits, ...rajwinderPunjabVisits];
+    }
 
     const allVisits = [...rawSonuVisits, ...rawTarunVisits, ...rawRajnishVisits, ...rawRajwinderVisits];
 
