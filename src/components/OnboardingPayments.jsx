@@ -25,6 +25,22 @@ const OnboardingPayments = ({ theme }) => {
     return '';
   };
 
+  const RH_MANAGER_STATE_MAP = {
+    'rajasthan': { email: 'rajnish.kumar@apnibus.com', name: 'Rajnish Kumar' },
+    'jharkhand': { email: 'rajnish.kumar@apnibus.com', name: 'Rajnish Kumar' },
+    'punjab': { email: 'rajwinder.singh@apnibus.com', name: 'Rajwinder Singh' },
+    'himachal pradesh': { email: 'tarun.kumar@apnibus.com', name: 'Tarun Kumar' },
+    'himachal': { email: 'tarun.kumar@apnibus.com', name: 'Tarun Kumar' },
+    'uttar pradesh': { email: 'tarun.kumar@apnibus.com', name: 'Tarun Kumar' },
+    'madhya pradesh': { email: 'tarun.kumar@apnibus.com', name: 'Tarun Kumar' },
+    'delhi': { email: 'sonu.mishra@apnibus.com', name: 'Sonu Mishra' },
+    'delhi-ncr': { email: 'sonu.mishra@apnibus.com', name: 'Sonu Mishra' },
+    'haryana': { email: 'sonu.mishra@apnibus.com', name: 'Sonu Mishra' },
+    'chhattisgarh': { email: 'sonu.mishra@apnibus.com', name: 'Sonu Mishra' },
+    'bihar': { email: 'sonu.mishra@apnibus.com', name: 'Sonu Mishra' },
+    'north': { email: 'tarun.kumar@apnibus.com', name: 'Tarun Kumar' }
+  };
+
   const allOrders = useMemo(() => {
     const orders = [];
     const seen = new Set();
@@ -53,20 +69,40 @@ const OnboardingPayments = ({ theme }) => {
       return null;
     };
 
-    const rawOnboarding = Array.isArray(allData._rawOnboarding) ? allData._rawOnboarding : [];
-    rawOnboarding.forEach(record => {
+    const rawRecords = [
+      ...(Array.isArray(allData._rawSales) ? allData._rawSales : []),
+      ...(Array.isArray(allData._rawOnboarding) ? allData._rawOnboarding : [])
+    ];
+
+    rawRecords.forEach(record => {
+      const isRH = String(record.bd_code || '').trim() === '1';
       const candidate = findCandidate(record);
       const date = formatOrderDate(record);
       const key = record.order_id ? String(record.order_id) : `${date}|${record.payable_amount}|${record.operator_name}`;
       if (seen.has(key)) return;
       seen.add(key);
+
+      let bdName = candidate?.name || record.rm_name || record.bd_name || 'Unmapped';
+      let bdRole = candidate?.role || 'Unknown';
+      let mgrEmail = candidate?.manager_email || '';
+      let mgrName = candidate?.manager_name || '';
+
+      if (isRH) {
+        const stateKey = normalizeText(record.operator_state || record.bd_state || '');
+        const rhInfo = RH_MANAGER_STATE_MAP[stateKey] || { email: '', name: 'RH Punched' };
+        bdName = record.rm_name || rhInfo.name || 'RH Punched Sale';
+        bdRole = 'RH';
+        mgrEmail = rhInfo.email;
+        mgrName = rhInfo.name;
+      }
+
       orders.push({
         ...record,
         date,
-        bd_name: candidate?.name || record.rm_name || record.bd_name || 'Unmapped',
-        bd_role: candidate?.role || 'Unknown',
-        manager_email: candidate?.manager_email || '',
-        manager_name: candidate?.manager_name || '',
+        bd_name: bdName,
+        bd_role: bdRole,
+        manager_email: mgrEmail,
+        manager_name: mgrName,
         payable_amount: parseFloat(record.payable_amount || record.wallet_amount || 0) || 0,
         setup_fee: parseFloat(record.setup_fee || 0) || 0,
         wallet_amount: parseFloat(record.wallet_amount || 0) || 0,
