@@ -28,6 +28,14 @@ const EMAIL_TO_MANAGER = {
 };
 
 
+const AUTHORIZED_ADMIN_EMAILS = [
+  'gaurav.thakur@apnibus.com',
+  'gauravthakur04@apnibus.com',
+  'arvind.ranjan@apnibus.com',
+  'ravi@apnibus.com',
+  'sunny@apnibus.com'
+];
+
 const MGR_EMAIL_MAP = {
   201: 'rajnish.kumar@apnibus.com',
   553: 'tarun.kumar@apnibus.com',
@@ -67,6 +75,12 @@ const App = () => {
     try { return JSON.parse(localStorage.getItem('apnibus_user') || 'null'); } catch { return null; }
   });
 
+  const isUserAdmin = (email) => {
+    if (!email) return false;
+    const clean = email.toLowerCase().trim();
+    return AUTHORIZED_ADMIN_EMAILS.some(adm => clean === adm.toLowerCase()) || clean.includes('gauravthakur');
+  };
+
   const handleLogin = useCallback(async (userData) => {
     setUser(userData);
     localStorage.setItem('apnibus_user', JSON.stringify(userData));
@@ -80,11 +94,12 @@ const App = () => {
     } catch (err) {
       console.error('Login data refresh failed:', err);
     }
-    // Auto-route manager to their own portal
-    const mgrParam = EMAIL_TO_MANAGER[userData.email];
-    if (mgrParam) {
+    // Auto-route manager to their own portal if not an admin
+    const mgrParam = EMAIL_TO_MANAGER[userData.email?.toLowerCase()];
+    if (mgrParam && !isUserAdmin(userData.email)) {
       setActiveTab(`mgr_${mgrParam}`);
       setCurrentMgrParam(mgrParam);
+      try { window.history.pushState({}, '', `/?manager=${mgrParam}`); } catch (_) {}
     } else {
       setActiveTab('overview');
     }
@@ -233,12 +248,36 @@ const App = () => {
 
   /* ── Tab Router ── */
   const renderContent = () => {
-    // If URL contains ?manager=..., strictly lock view to that manager's portal
+    // 1. If URL contains ?manager=..., strictly lock view to that manager's portal
     const urlMgrParam = getManagerParam();
     if (urlMgrParam === 'rajnish')   return <ManagerTeamDashboard managerEmail="rajnish.kumar@apnibus.com" theme={theme} />;
     if (urlMgrParam === 'tarun')     return <ManagerTeamDashboard managerEmail="tarun.kumar@apnibus.com" theme={theme} />;
     if (urlMgrParam === 'sonu')      return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
     if (urlMgrParam === 'rajwinder') return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
+
+    // 2. If logged in user is a manager (and not an admin), route them to their manager dashboard
+    if (user && !isUserAdmin(user.email)) {
+      const userMgrParam = EMAIL_TO_MANAGER[user.email?.toLowerCase()];
+      if (userMgrParam === 'rajnish')   return <ManagerTeamDashboard managerEmail="rajnish.kumar@apnibus.com" theme={theme} />;
+      if (userMgrParam === 'tarun')     return <ManagerTeamDashboard managerEmail="tarun.kumar@apnibus.com" theme={theme} />;
+      if (userMgrParam === 'sonu')      return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
+      if (userMgrParam === 'rajwinder') return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
+
+      // Unauthorized non-admin user trying to access Head Portal
+      return (
+        <div className="card" style={{ padding: '48px 36px', textAlign: 'center', maxWidth: 480, margin: '60px auto' }}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-heading)', marginBottom: 10 }}>
+            Admin Access Restricted
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
+            Access to the Main Admin / Head Portal is restricted to authorized administrators.
+          </p>
+          <button className="btn-primary" onClick={handleLogout} style={{ padding: '10px 24px', borderRadius: 8, fontSize: 13 }}>
+            Sign Out
+          </button>
+        </div>
+      );
+    }
 
     switch (activeTab) {
       case 'overview':
