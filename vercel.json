@@ -17,6 +17,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api-live/public/question/:path*",
+      "destination": "https://data.apnibus.com/public/question/:path*"
+    },
+    {
+      "source": "/api-live/api/public/card/:path*",
+      "destination": "https://data.apnibus.com/api/public/card/:path*"
+    },
+    {
       "source": "/((?!api).*)",
       "destination": "/index.html"
     }

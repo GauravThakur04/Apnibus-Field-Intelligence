@@ -85,8 +85,12 @@ function filterCSVToMonth(csvText, monthPrefix) {
 
     const cols = parseCSVLine(line);
     const dateVal = (cols[dateIdx] || '').replace(/"/g, '').trim();
+    const cleanDate = dateVal.replace(/[/.]/g, '-');
+    const isMatch = !dateVal ||
+      dateVal.startsWith(monthPrefix) ||
+      cleanDate.includes(monthPrefix);
 
-    if (!dateVal || dateVal.startsWith(monthPrefix)) {
+    if (isMatch) {
       filteredLines.push(line);
     }
   }

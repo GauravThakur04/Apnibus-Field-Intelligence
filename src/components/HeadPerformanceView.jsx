@@ -68,10 +68,42 @@ const HeadPerformanceView = ({ metrics, stats, rmSales }) => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginTop: 14 }}>
-        {secondRowCards.map((role, index) => {
+        {secondRowCards.map((role) => {
           const startedPct = role.count ? Math.round((role.activeToday / role.count) * 100) : 0;
           return (
             <div key={role.key} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 16px', background: 'var(--bg-input)', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{role.label}</div>
+                <div style={{ marginTop: 5, fontSize: 23, fontWeight: 900, color: 'var(--text-heading)', fontFamily: 'var(--font-header)' }}>{role.count}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>team members</div>
+              </div>
+              <div style={{ padding: '6px 16px 12px' }}>
+                <div style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}><span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Day started today</span><strong style={{ fontSize: 13 }}>{role.activeToday} / {role.count}</strong></div>
+                  <Progress value={startedPct} />
+                </div>
+                {[
+                  ['MTD visits', role.mtdVisits],
+                  ['FTD visits', role.ftdVisits],
+                  ['Cities covered', role.cities],
+                  ['FTD sales / revenue', `${role.ftdSales} · ${money(role.ftdRevenue)}`],
+                  ['MTD sales / revenue', `${role.mtdSales} · ${money(role.mtdRevenue)}`],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '9px 0', borderBottom: '1px solid var(--border)', fontSize: 11 }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{label}</span><strong style={{ color: 'var(--text-heading)', textAlign: 'right' }}>{value}</strong>
+                  </div>
+                ))}
+                <div style={{ paddingTop: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}><span style={{ fontSize: 11, color: 'var(--text-muted)' }}>MTD attendance</span><strong style={{ fontSize: 13 }}>{role.attendance}%</strong></div>
+                  <Progress value={role.attendance} color="#10b981" />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* RM Combined Sales Card */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', background: 'rgba(245,158,11,0.10)', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontSize: 11, color: '#d97706', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>RM Combined Sales</div>
             <div style={{ marginTop: 5, fontSize: 23, fontWeight: 900, color: 'var(--text-heading)', fontFamily: 'var(--font-header)' }}>{rm.mtdCount}</div>

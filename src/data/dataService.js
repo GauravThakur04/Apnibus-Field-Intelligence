@@ -597,7 +597,7 @@ const enrichInitialRawData = (raw) => {
   };
 };
 
-const DATA_MAPPING_VERSION = '2026-08-06-mtd-proxy-filter-v23';
+const DATA_MAPPING_VERSION = '2026-08-06-cdn-proxy-rewrite-v24';
 let currentData = enrichInitialRawData(rawData);
 try {
   const saved = localStorage.getItem('apnibus_dashboard_data');
@@ -1326,16 +1326,16 @@ function localParseCSV(csvText) {
 // Fetch a CSV — tries proxy first, falls back to direct fetch.
 // No AbortController timeout: Vercel's 60s function limit is the real ceiling.
 const fetchCSVText = async (url) => {
-  if (import.meta.env.DEV) {
-    // Local dev: use Vite proxy to avoid CORS
+  try {
     const targetUrl = new URL(url);
     const proxyUrl = `/api-live${targetUrl.pathname}${targetUrl.search}`;
     const res = await fetch(proxyUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status} for ${proxyUrl}`);
-    return await res.text();
+    if (res.ok) return await res.text();
+  } catch (err) {
+    console.warn("CDN proxy fetch failed, trying fallback serverless proxy:", err);
   }
 
-  // Production (Vercel): use serverless proxy which handles redirects + decompression
+  // Fallback to serverless proxy
   const proxyUrl = `/api/api-live?target=${encodeURIComponent(url)}&_cb=${Date.now()}`;
   const res = await fetch(proxyUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${proxyUrl}`);
