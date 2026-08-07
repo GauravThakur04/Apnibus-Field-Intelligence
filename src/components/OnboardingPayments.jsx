@@ -2,10 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { Filter, Search, DollarSign } from 'lucide-react';
 import { getData } from '../data/dataService';
 
-const OnboardingPayments = ({ theme }) => {
+const OnboardingPayments = ({ theme, initialManager }) => {
   const allData = getData() || { salespersons: [] };
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterManager, setFilterManager] = useState('ALL');
+  const [filterManager, setFilterManager] = useState(initialManager || 'ALL');
   const [filterDate, setFilterDate] = useState('');
   const [timeframe, setTimeframe] = useState('FTD');
 

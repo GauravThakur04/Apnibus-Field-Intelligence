@@ -247,23 +247,21 @@ const App = () => {
   const handleDataChanged = () => setDataVersion(v => v + 1);
 
   /* ── Tab Router ── */
+  const MANAGER_CONFIG_MAP = {
+    'rajnish':   { email: 'rajnish.kumar@apnibus.com', id: 201 },
+    'tarun':     { email: 'tarun.kumar@apnibus.com',   id: 553 },
+    'sonu':      { email: 'sonu.mishra@apnibus.com',    id: 552 },
+    'rajwinder': { email: 'rajwinder.singh@apnibus.com', id: 554 }
+  };
+
+  /* ── Tab Router ── */
   const renderContent = () => {
-    // 1. If URL contains ?manager=..., strictly lock view to that manager's portal
     const urlMgrParam = getManagerParam();
-    if (urlMgrParam === 'rajnish')   return <ManagerTeamDashboard managerEmail="rajnish.kumar@apnibus.com" theme={theme} />;
-    if (urlMgrParam === 'tarun')     return <ManagerTeamDashboard managerEmail="tarun.kumar@apnibus.com" theme={theme} />;
-    if (urlMgrParam === 'sonu')      return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
-    if (urlMgrParam === 'rajwinder') return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
+    const userMgrParam = (user && !isUserAdmin(user.email)) ? EMAIL_TO_MANAGER[user.email?.toLowerCase()] : null;
+    const activeMgrParam = urlMgrParam || userMgrParam;
 
-    // 2. If logged in user is a manager (and not an admin), route them to their manager dashboard
-    if (user && !isUserAdmin(user.email)) {
-      const userMgrParam = EMAIL_TO_MANAGER[user.email?.toLowerCase()];
-      if (userMgrParam === 'rajnish')   return <ManagerTeamDashboard managerEmail="rajnish.kumar@apnibus.com" theme={theme} />;
-      if (userMgrParam === 'tarun')     return <ManagerTeamDashboard managerEmail="tarun.kumar@apnibus.com" theme={theme} />;
-      if (userMgrParam === 'sonu')      return <ManagerTeamDashboard managerEmail="sonu.mishra@apnibus.com" theme={theme} />;
-      if (userMgrParam === 'rajwinder') return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
-
-      // Unauthorized non-admin user trying to access Head Portal
+    // Unauthorized non-admin user trying to access Head Portal
+    if (user && !isUserAdmin(user.email) && !activeMgrParam) {
       return (
         <div className="card" style={{ padding: '48px 36px', textAlign: 'center', maxWidth: 480, margin: '60px auto' }}>
           <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-heading)', marginBottom: 10 }}>
@@ -279,12 +277,19 @@ const App = () => {
       );
     }
 
+    // Determine manager scope if operating within a Manager Portal
+    const mgrConfig = activeMgrParam ? MANAGER_CONFIG_MAP[activeMgrParam] : null;
+    const effectiveFilters = mgrConfig ? { ...globalFilters, managerId: mgrConfig.id } : globalFilters;
+
     switch (activeTab) {
       case 'overview':
+        if (mgrConfig) {
+          return <ManagerTeamDashboard managerEmail={mgrConfig.email} theme={theme} />;
+        }
         return <ExecutiveOverview filters={globalFilters} theme={theme} onNavigate={setActiveTab} />;
 
       case 'onboarding':
-        return <OnboardingPayments theme={theme} />;
+        return <OnboardingPayments theme={theme} initialManager={mgrConfig?.email || 'ALL'} />;
 
       // 👤 Dedicated Manager Dashboards
       case 'mgr_rajnish':
@@ -300,6 +305,9 @@ const App = () => {
         return <ManagerTeamDashboard managerEmail="rajwinder.singh@apnibus.com" theme={theme} />;
 
       case 'managers':
+        if (mgrConfig) {
+          return <ManagerTeamDashboard managerEmail={mgrConfig.email} theme={theme} />;
+        }
         return <ManagerPerformance />;
 
       case 'candidates':
@@ -313,7 +321,7 @@ const App = () => {
               />
             ) : (
               <CandidateLeaderboard
-                selectedManagerId={activeManagerId}
+                selectedManagerId={mgrConfig ? mgrConfig.id : activeManagerId}
                 setSelectedManagerId={() => {}}
                 onSelectCandidate={setSelectedCandidateName}
                 selectedCandidateName={selectedCandidateName}
@@ -325,22 +333,25 @@ const App = () => {
       case 'map':
         return (
           <LiveVisitMap
-            globalFilters={globalFilters}
+            globalFilters={effectiveFilters}
             theme={theme}
             onSelectCandidate={name => { setSelectedCandidateName(name); setActiveTab('candidates'); }}
           />
         );
 
       case 'table':
-        return <VisitTable globalFilters={globalFilters} />;
+        return <VisitTable globalFilters={effectiveFilters} />;
 
       case 'insights':
-        return <SmartInsights filters={globalFilters} />;
+        return <SmartInsights filters={effectiveFilters} />;
 
       case 'alerts':
-        return <RedAlertDashboard globalFilters={globalFilters} />;
+        return <RedAlertDashboard globalFilters={effectiveFilters} />;
 
       default:
+        if (mgrConfig) {
+          return <ManagerTeamDashboard managerEmail={mgrConfig.email} theme={theme} />;
+        }
         return <ExecutiveOverview filters={globalFilters} theme={theme} onNavigate={setActiveTab} />;
     }
   };
