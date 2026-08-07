@@ -279,19 +279,19 @@ const IndividualBDDashboard = ({ bdName, onBack, theme }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div style={{ padding: '8px 10px', borderRadius: 6, background: 'var(--bg-input)' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>Present Days</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981' }}>{candidate.present_days || 28} days</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981' }}>{candidate.mtd_present_days ?? candidate.present_days ?? 0} days</div>
               </div>
               <div style={{ padding: '8px 10px', borderRadius: 6, background: 'var(--bg-input)' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>Absent Days</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#f43f5e' }}>{candidate.absent_days || 2} days</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#f43f5e' }}>{candidate.mtd_absent_days ?? candidate.absent_days ?? 0} days</div>
               </div>
               <div style={{ padding: '8px 10px', borderRadius: 6, background: 'var(--bg-input)' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>Sale Punches</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#2563eb' }}>{candidate.sale_punches || 0}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#2563eb' }}>{candidate.mtd_sales ?? candidate.sale_punches ?? 0}</div>
               </div>
               <div style={{ padding: '8px 10px', borderRadius: 6, background: 'var(--bg-input)' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>Service Punches</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#7c3aed' }}>{candidate.service_punches || 0}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#7c3aed' }}>{candidate.service_punches ?? candidateVisits.filter(v => (v.type || '').toUpperCase().includes('SERVICE')).length}</div>
               </div>
             </div>
           </div>
