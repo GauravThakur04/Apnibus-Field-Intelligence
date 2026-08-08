@@ -105,7 +105,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return (allData.visits || []).filter(v => formatToISODate(v.visit_date).startsWith(selectedMonth));
   }, [allData.visits, selectedMonth]);
 
-  // Filter Onboarding Payments records using identical resolution logic as OnboardingPayments.jsx
+  // Filter Onboarding Payments records using DATE-SCOPED resolution logic
   const monthOnboardingOrders = useMemo(() => {
     const rawOnboarding = (allData._rawOnboarding || []);
     const candidates = (allData.salespersons || []).map(sp => ({
@@ -115,28 +115,35 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     }));
 
     const findCandidate = (record) => {
-      // 1. Check rm_name or bd_name match directly against candidates
+      const recDate = formatToISODate(record.created_on || record.order_date || '');
+
+      // 1. Direct name match
       const recNames = [record.rm_name, record.bd_name].map(normalizeText).filter(Boolean);
       if (recNames.length) {
         for (const rName of recNames) {
           const canonicalName = CANONICAL_ALIASES[rName] || rName;
-          const match = candidates.find(c => c.normName === canonicalName || c.normName.includes(canonicalName) || canonicalName.includes(c.normName));
+          const match = candidates.find(c => c.normName === canonicalName);
           if (match) return match;
         }
       }
-      // 2. Check operator/company matching against candidate visits if rm_name is Unmapped
+
+      // 2. Exact SAME DATE operator visit match
       if (record.company_name || record.operator_name) {
         const opNorm = normalizeText(record.company_name || record.operator_name);
-        const visitMatch = (allData.visits || []).find(v => {
+        const sameDateVisit = (allData.visits || []).find(v => {
+          const vDate = formatToISODate(v.visit_date);
+          if (vDate !== recDate) return false;
           const vOp = normalizeText(v.company_name || v.operator_name);
-          return vOp && (vOp.includes(opNorm) || opNorm.includes(vOp));
+          return vOp && (vOp === opNorm || vOp.includes(opNorm) || opNorm.includes(vOp));
         });
-        if (visitMatch) {
-          const bdMatch = candidates.find(c => c.normName === normalizeText(visitMatch.bd_name));
+        if (sameDateVisit) {
+          const canonicalVisitBD = CANONICAL_ALIASES[normalizeText(sameDateVisit.bd_name)] || normalizeText(sameDateVisit.bd_name);
+          const bdMatch = candidates.find(c => c.normName === canonicalVisitBD);
           if (bdMatch) return bdMatch;
         }
       }
-      // 3. Check mobile match
+
+      // 3. Mobile match
       const recordPhones = [record.bd_code, record.mobile, record.bd_mobile, record.operator_mobile_no]
         .map(normalizePhone).filter(Boolean);
       if (recordPhones.length) {
@@ -175,16 +182,20 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return orders;
   }, [allData._rawOnboarding, allData.salespersons, allData.visits, selectedMonth]);
 
-  // Helper function to check visit match against BD
+  // Helper function to check visit match against BD (STRICT EXACT OR CANONICAL ALIAS MATCH ONLY)
   const matchesVisitBD = (bd, visit) => {
     if (!bd || !visit) return false;
     const bdNorm = normalizeText(bd.name);
     const recName = normalizeText(visit.bd_name);
-    if (!recName) return false;
+    if (!recName || !bdNorm) return false;
+
+    // 1. Exact string match
     if (bdNorm === recName) return true;
+
+    // 2. Exact Canonical Alias match
     if (CANONICAL_ALIASES[recName] && normalizeText(CANONICAL_ALIASES[recName]) === bdNorm) return true;
     if (CANONICAL_ALIASES[bdNorm] && normalizeText(CANONICAL_ALIASES[bdNorm]) === recName) return true;
-    if (bdNorm.length >= 4 && recName.length >= 4 && (bdNorm.includes(recName) || recName.includes(bdNorm))) return true;
+
     return false;
   };
 
@@ -193,7 +204,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return teamBDs.map(bd => {
       const bdNorm = normalizeText(bd.name);
 
-      // Get visits for this BD from Visit CSVs
+      // Get visits for this BD from Visit CSVs strictly by exact BD name
       const bdVisits = monthVisits.filter(v => matchesVisitBD(bd, v));
 
       // Get sales & revenue for this BD strictly from Onboarding Payments CSV
