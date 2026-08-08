@@ -18,13 +18,17 @@ const CANONICAL_ALIASES = {
   'sukhdev singh': 'sukhdev singh'
 };
 
-function normalizeName(val) {
+function normalizeText(val) {
   return String(val || '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalizePhone(val) {
+  return String(val || '').replace(/\D/g, '').replace(/^0+/, '').trim();
 }
 
 function formatToISODate(dateStr) {
@@ -39,32 +43,6 @@ function formatToISODate(dateStr) {
     }
   }
   return dateStr;
-}
-
-function matchesBD(bd, record) {
-  if (!bd || !record) return false;
-  const bdNorm = normalizeName(bd.name);
-
-  const recNames = [
-    record.bd_name, record.salesperson_name, record.rm_name,
-    record.employee_name, record.executive_name, record.bd_full_name
-  ].map(normalizeName).filter(Boolean);
-
-  for (const recNorm of recNames) {
-    if (bdNorm === recNorm) return true;
-    if (CANONICAL_ALIASES[recNorm] && CANONICAL_ALIASES[recNorm] === bdNorm) return true;
-    if (CANONICAL_ALIASES[bdNorm] && CANONICAL_ALIASES[bdNorm] === recNorm) return true;
-    if (bdNorm.length >= 4 && recNorm.length >= 4 && (bdNorm.includes(recNorm) || recNorm.includes(bdNorm))) return true;
-  }
-
-  // Also check mobile match if available
-  if (bd.mobile) {
-    const bdPhone = String(bd.mobile).replace(/\D/g, '').slice(-10);
-    const recPhone = String(record.mobile || record.phone || record.user_id || record.bd_code || '').replace(/\D/g, '').slice(-10);
-    if (bdPhone && recPhone && bdPhone.length >= 7 && bdPhone === recPhone) return true;
-  }
-
-  return false;
 }
 
 const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
@@ -127,24 +105,99 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return (allData.visits || []).filter(v => formatToISODate(v.visit_date).startsWith(selectedMonth));
   }, [allData.visits, selectedMonth]);
 
-  // Filter Onboarding Payments records for the selected month (Sales punches & Revenue)
+  // Filter Onboarding Payments records using identical resolution logic as OnboardingPayments.jsx
   const monthOnboardingOrders = useMemo(() => {
     const rawOnboarding = (allData._rawOnboarding || []);
-    return rawOnboarding.filter(o => {
-      if (String(o.payment_status || '').toUpperCase() === 'C') return false;
-      const d = formatToISODate(o.created_on || o.order_date || '');
-      return d.startsWith(selectedMonth);
+    const candidates = (allData.salespersons || []).map(sp => ({
+      ...sp,
+      normName: normalizeText(sp.name),
+      phones: new Set([sp.mobile, sp.phone, sp.user_id, sp.bd_code].map(normalizePhone).filter(Boolean)),
+    }));
+
+    const findCandidate = (record) => {
+      // 1. Check rm_name or bd_name match directly against candidates
+      const recNames = [record.rm_name, record.bd_name].map(normalizeText).filter(Boolean);
+      if (recNames.length) {
+        for (const rName of recNames) {
+          const canonicalName = CANONICAL_ALIASES[rName] || rName;
+          const match = candidates.find(c => c.normName === canonicalName || c.normName.includes(canonicalName) || canonicalName.includes(c.normName));
+          if (match) return match;
+        }
+      }
+      // 2. Check operator/company matching against candidate visits if rm_name is Unmapped
+      if (record.company_name || record.operator_name) {
+        const opNorm = normalizeText(record.company_name || record.operator_name);
+        const visitMatch = (allData.visits || []).find(v => {
+          const vOp = normalizeText(v.company_name || v.operator_name);
+          return vOp && (vOp.includes(opNorm) || opNorm.includes(vOp));
+        });
+        if (visitMatch) {
+          const bdMatch = candidates.find(c => c.normName === normalizeText(visitMatch.bd_name));
+          if (bdMatch) return bdMatch;
+        }
+      }
+      // 3. Check mobile match
+      const recordPhones = [record.bd_code, record.mobile, record.bd_mobile, record.operator_mobile_no]
+        .map(normalizePhone).filter(Boolean);
+      if (recordPhones.length) {
+        const phoneMatch = candidates.find(c => recordPhones.some(p => c.phones.has(p)));
+        if (phoneMatch) return phoneMatch;
+      }
+      return null;
+    };
+
+    const seen = new Set();
+    const orders = [];
+
+    rawOnboarding.forEach(record => {
+      if (String(record.payment_status || '').toUpperCase() === 'C') return;
+      const d = formatToISODate(record.created_on || record.order_date || '');
+      if (!d.startsWith(selectedMonth)) return;
+
+      const candidate = findCandidate(record);
+      const key = record.order_id ? String(record.order_id) : `${d}|${record.payable_amount}|${record.operator_name}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const bdName = candidate?.name || record.rm_name || record.bd_name || 'Unmapped';
+      const mgrEmail = candidate?.manager_email || '';
+
+      orders.push({
+        ...record,
+        date: d,
+        bd_name: bdName,
+        manager_email: mgrEmail,
+        payable_amount: parseFloat(record.payable_amount || record.wallet_amount || 0) || 0,
+        num_items: parseInt(record.num_items || 1, 10) || 1,
+      });
     });
-  }, [allData._rawOnboarding, selectedMonth]);
+
+    return orders;
+  }, [allData._rawOnboarding, allData.salespersons, allData.visits, selectedMonth]);
+
+  // Helper function to check visit match against BD
+  const matchesVisitBD = (bd, visit) => {
+    if (!bd || !visit) return false;
+    const bdNorm = normalizeText(bd.name);
+    const recName = normalizeText(visit.bd_name);
+    if (!recName) return false;
+    if (bdNorm === recName) return true;
+    if (CANONICAL_ALIASES[recName] && normalizeText(CANONICAL_ALIASES[recName]) === bdNorm) return true;
+    if (CANONICAL_ALIASES[bdNorm] && normalizeText(CANONICAL_ALIASES[bdNorm]) === recName) return true;
+    if (bdNorm.length >= 4 && recName.length >= 4 && (bdNorm.includes(recName) || recName.includes(bdNorm))) return true;
+    return false;
+  };
 
   // Build matrix dataset
   const matrixData = useMemo(() => {
     return teamBDs.map(bd => {
+      const bdNorm = normalizeText(bd.name);
+
       // Get visits for this BD from Visit CSVs
-      const bdVisits = monthVisits.filter(v => matchesBD(bd, v));
+      const bdVisits = monthVisits.filter(v => matchesVisitBD(bd, v));
 
       // Get sales & revenue for this BD strictly from Onboarding Payments CSV
-      const bdOrders = monthOnboardingOrders.filter(o => matchesBD(bd, o));
+      const bdOrders = monthOnboardingOrders.filter(o => normalizeText(o.bd_name) === bdNorm);
 
       // Daily map
       const dailyMap = {};
@@ -153,13 +206,13 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
           const items = bdVisits.filter(v => formatToISODate(v.visit_date) === dateStr);
           dailyMap[dateStr] = { val: items.length, items };
         } else if (mode === 'sales') {
-          const items = bdOrders.filter(o => formatToISODate(o.created_on || o.order_date) === dateStr);
+          const items = bdOrders.filter(o => o.date === dateStr);
           const count = items.reduce((sum, o) => sum + (parseInt(o.num_items || 1, 10) || 1), 0);
           dailyMap[dateStr] = { val: count, items };
         } else {
           // Revenue
-          const items = bdOrders.filter(o => formatToISODate(o.created_on || o.order_date) === dateStr);
-          const rev = items.reduce((sum, o) => sum + (parseFloat(o.payable_amount || o.wallet_amount || o.amount || 0) || 0), 0);
+          const items = bdOrders.filter(o => o.date === dateStr);
+          const rev = items.reduce((sum, o) => sum + (parseFloat(o.payable_amount || o.wallet_amount || 0) || 0), 0);
           dailyMap[dateStr] = { val: rev, items };
         }
       });
@@ -177,7 +230,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
         mtdTotal
       };
     });
-  }, [teamBDs, monthVisits, monthOrders, monthDays, mode, selectedMonth]);
+  }, [teamBDs, monthVisits, monthOnboardingOrders, monthDays, mode, selectedMonth]);
 
   // Calculate top daily summary row (Sum of all BDs for each day)
   const dailyTeamTotals = useMemo(() => {
