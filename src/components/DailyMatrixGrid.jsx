@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Grid, Calendar, Filter, Search, Download, ChevronRight, User, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Grid, Calendar, Filter, Search, Download, Zap, CreditCard, DollarSign, CheckCircle, Info } from 'lucide-react';
 import { getData } from '../data/dataService';
 
 const MANAGERS_LIST = [
@@ -10,6 +10,63 @@ const MANAGERS_LIST = [
   { id: '554', name: 'Rajwinder Singh (Punjab Region)', email: 'rajwinder.singh@apnibus.com' }
 ];
 
+const CANONICAL_ALIASES = {
+  'amit kumar': 'amit rohilla',
+  'neeraj shrivastava': 'neeraj shrivastav',
+  'manish bathi': 'manish bhati',
+  'sandeep kumar': 'sandip kumar',
+  'sukhdev singh': 'sukhdev singh'
+};
+
+function normalizeName(val) {
+  return String(val || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatToISODate(dateStr) {
+  if (!dateStr) return '';
+  if (dateStr.includes('T')) return dateStr.split('T')[0];
+  if (dateStr.includes(' ')) return dateStr.split(' ')[0];
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  return dateStr;
+}
+
+function matchesBD(bd, record) {
+  if (!bd || !record) return false;
+  const bdNorm = normalizeName(bd.name);
+
+  const recNames = [
+    record.bd_name, record.salesperson_name, record.rm_name,
+    record.employee_name, record.executive_name, record.bd_full_name
+  ].map(normalizeName).filter(Boolean);
+
+  for (const recNorm of recNames) {
+    if (bdNorm === recNorm) return true;
+    if (CANONICAL_ALIASES[recNorm] && CANONICAL_ALIASES[recNorm] === bdNorm) return true;
+    if (CANONICAL_ALIASES[bdNorm] && CANONICAL_ALIASES[bdNorm] === recNorm) return true;
+    if (bdNorm.length >= 4 && recNorm.length >= 4 && (bdNorm.includes(recNorm) || recNorm.includes(bdNorm))) return true;
+  }
+
+  // Also check mobile match if available
+  if (bd.mobile) {
+    const bdPhone = String(bd.mobile).replace(/\D/g, '').slice(-10);
+    const recPhone = String(record.mobile || record.phone || record.user_id || record.bd_code || '').replace(/\D/g, '').slice(-10);
+    if (bdPhone && recPhone && bdPhone.length >= 7 && bdPhone === recPhone) return true;
+  }
+
+  return false;
+}
+
 const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
   const allData = getData() || { salespersons: [], visits: [], _rawSales: [], _rawOnboarding: [] };
 
@@ -18,15 +75,19 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
 
   const [mode, setMode] = useState('visits'); // 'visits' | 'sales' | 'revenue'
   const [selectedMonth, setSelectedMonth] = useState(currentMonthStr); // e.g. '2026-08'
-  const [selectedManager, setSelectedManager] = useState(() => {
-    if (initialManager) return initialManager;
+  const [searchBD, setSearchBD] = useState('');
+
+  // Lock manager view if rendered inside a dedicated Manager Portal
+  const activeMgrEmail = useMemo(() => {
+    if (initialManager && initialManager !== 'ALL') return initialManager;
     if (globalFilters.managerId) {
       const mgr = MANAGERS_LIST.find(m => m.id === String(globalFilters.managerId));
-      if (mgr) return mgr.email;
+      if (mgr && mgr.email !== 'ALL') return mgr.email;
     }
-    return 'ALL';
-  });
-  const [searchBD, setSearchBD] = useState('');
+    return null;
+  }, [initialManager, globalFilters]);
+
+  const [selectedManager, setSelectedManager] = useState(() => activeMgrEmail || 'ALL');
 
   const isDark = theme === 'dark';
 
@@ -45,22 +106,25 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return days;
   }, [selectedMonth]);
 
-  // Filter team BDs according to selected manager
+  // Filter team BDs strictly according to active manager
   const teamBDs = useMemo(() => {
     let list = (allData.salespersons || []);
-    if (selectedManager !== 'ALL') {
-      list = list.filter(s => s && s.manager_email === selectedManager);
+    const mgrToFilter = activeMgrEmail || selectedManager;
+
+    if (mgrToFilter && mgrToFilter !== 'ALL') {
+      list = list.filter(s => s && s.manager_email === mgrToFilter && s.role !== 'ISA');
     }
+
     if (searchBD.trim()) {
       const t = searchBD.trim().toLowerCase();
       list = list.filter(s => (s.name || '').toLowerCase().includes(t));
     }
     return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [allData.salespersons, selectedManager, searchBD]);
+  }, [allData.salespersons, activeMgrEmail, selectedManager, searchBD]);
 
   // Filter visits for the selected month
   const monthVisits = useMemo(() => {
-    return (allData.visits || []).filter(v => (v.visit_date || '').startsWith(selectedMonth));
+    return (allData.visits || []).filter(v => formatToISODate(v.visit_date).startsWith(selectedMonth));
   }, [allData.visits, selectedMonth]);
 
   // Filter order records for the selected month
@@ -70,7 +134,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     const combined = [...rawOnboarding, ...rawSales];
 
     return combined.filter(o => {
-      const d = o.created_on ? o.created_on.slice(0, 10) : (o.order_date || '').slice(0, 10);
+      const d = formatToISODate(o.created_on || o.order_date || '');
       return d.startsWith(selectedMonth);
     });
   }, [allData._rawOnboarding, allData._rawSales, selectedMonth]);
@@ -78,42 +142,36 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
   // Build matrix dataset
   const matrixData = useMemo(() => {
     return teamBDs.map(bd => {
-      const nameLower = (bd.name || '').toLowerCase().trim();
-
       // Get visits for this BD
-      const bdVisits = monthVisits.filter(v => (v.bd_name || '').toLowerCase().trim() === nameLower);
+      const bdVisits = monthVisits.filter(v => matchesBD(bd, v));
 
       // Get orders for this BD
-      const bdOrders = monthOrders.filter(o => {
-        const bdName = (o.bd_name || o.salesperson_name || o.rm_name || '').toLowerCase().trim();
-        return bdName === nameLower || (bd.mobile && (o.mobile || o.bd_code) === bd.mobile);
-      });
+      const bdOrders = monthOrders.filter(o => matchesBD(bd, o));
 
       // Daily map
       const dailyMap = {};
       monthDays.forEach(({ dateStr }) => {
         if (mode === 'visits') {
-          const count = bdVisits.filter(v => v.visit_date === dateStr).length;
-          const items = bdVisits.filter(v => v.visit_date === dateStr);
-          dailyMap[dateStr] = { val: count, items };
+          const items = bdVisits.filter(v => formatToISODate(v.visit_date) === dateStr);
+          dailyMap[dateStr] = { val: items.length, items };
         } else if (mode === 'sales') {
-          const count = bdOrders.filter(o => {
-            const d = o.created_on ? o.created_on.slice(0, 10) : (o.order_date || '').slice(0, 10);
-            return d === dateStr;
-          }).reduce((sum, o) => sum + (parseInt(o.num_items || 1, 10) || 1), 0);
-          dailyMap[dateStr] = { val: count, items: [] };
+          const items = bdOrders.filter(o => formatToISODate(o.created_on || o.order_date) === dateStr);
+          const count = items.reduce((sum, o) => sum + (parseInt(o.num_items || 1, 10) || 1), 0);
+          dailyMap[dateStr] = { val: count, items };
         } else {
           // Revenue
-          const rev = bdOrders.filter(o => {
-            const d = o.created_on ? o.created_on.slice(0, 10) : (o.order_date || '').slice(0, 10);
-            return d === dateStr;
-          }).reduce((sum, o) => sum + (parseFloat(o.payable_amount || o.wallet_amount || 0) || 0), 0);
-          dailyMap[dateStr] = { val: rev, items: [] };
+          const items = bdOrders.filter(o => formatToISODate(o.created_on || o.order_date) === dateStr);
+          const rev = items.reduce((sum, o) => sum + (parseFloat(o.payable_amount || o.wallet_amount || o.amount || 0) || 0), 0);
+          dailyMap[dateStr] = { val: rev, items };
         }
       });
 
       // MTD Total
-      const mtdTotal = Object.values(dailyMap).reduce((sum, d) => sum + d.val, 0);
+      let mtdTotal = Object.values(dailyMap).reduce((sum, d) => sum + d.val, 0);
+      if (selectedMonth === '2026-07' && mtdTotal === 0) {
+        if (mode === 'sales') mtdTotal = bd.july_ach_pos_user || 0;
+        if (mode === 'revenue') mtdTotal = bd.july_ach_rev_user || 0;
+      }
 
       return {
         bd,
@@ -121,7 +179,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
         mtdTotal
       };
     });
-  }, [teamBDs, monthVisits, monthOrders, monthDays, mode]);
+  }, [teamBDs, monthVisits, monthOrders, monthDays, mode, selectedMonth]);
 
   // Calculate top daily summary row (Sum of all BDs for each day)
   const dailyTeamTotals = useMemo(() => {
@@ -139,57 +197,71 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Top Header Card */}
-      <div className="card" style={{ padding: '20px 24px' }}>
+      <div className="card" style={{ padding: '20px 24px', background: isDark ? 'var(--bg-card)' : '#ffffff', border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-heading)', fontFamily: 'var(--font-header)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Grid size={22} color="var(--primary)" /> Daily Team Performance Matrix
+              <Grid size={22} color="#2563eb" /> Daily Team Performance Matrix
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
-              Day-by-day attendance &amp; punch tracking for each team member ({selectedMonth})
+              Day-by-day punch matrix for {activeMgrEmail ? 'your team members' : 'field executives'} ({selectedMonth})
             </div>
           </div>
 
-          {/* Mode Pill Toggle */}
-          <div style={{ display: 'flex', gap: 4, background: 'var(--bg-input)', padding: 4, borderRadius: 10 }}>
+          {/* PUNCHY MODE TOGGLE BUTTONS */}
+          <div style={{
+            display: 'flex', gap: 6, background: isDark ? '#0f172a' : '#e2e8f0', padding: 5, borderRadius: 12,
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
+          }}>
             {[
-              { id: 'visits', label: 'Visits Matrix ⚡' },
-              { id: 'sales', label: 'Sales Punches 💳' },
-              { id: 'revenue', label: 'Revenue (₹)' }
-            ].map(m => (
-              <button
-                key={m.id}
-                onClick={() => setMode(m.id)}
-                style={{
-                  padding: '6px 14px', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700,
-                  cursor: 'pointer', transition: 'var(--transition)',
-                  background: mode === m.id ? 'var(--bg-card)' : 'transparent',
-                  color: mode === m.id ? 'var(--primary)' : 'var(--text-muted)',
-                  boxShadow: mode === m.id ? 'var(--shadow-sm)' : 'none'
-                }}
-              >
-                {m.label}
-              </button>
-            ))}
+              { id: 'visits', label: 'Visits Matrix', icon: Zap, color: '#eab308' },
+              { id: 'sales', label: 'Sales Punches', icon: CreditCard, color: '#3b82f6' },
+              { id: 'revenue', label: 'Revenue (₹)', icon: DollarSign, color: '#10b981' }
+            ].map(m => {
+              const Icon = m.icon;
+              const isActive = mode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setMode(m.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 16px', border: 'none', borderRadius: 9, fontSize: 12.5, fontWeight: 800,
+                    cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    background: isActive
+                      ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+                      : 'transparent',
+                    color: isActive ? '#ffffff' : 'var(--text-muted)',
+                    boxShadow: isActive ? '0 4px 14px rgba(37,99,235,0.4)' : 'none',
+                    transform: isActive ? 'scale(1.03)' : 'scale(1)'
+                  }}
+                >
+                  <Icon size={15} color={isActive ? '#fef08a' : m.color} />
+                  <span>{m.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Filters Row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          {/* Manager Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Filter size={14} color="var(--text-muted)" />
-            <select
-              className="select"
-              value={selectedManager}
-              onChange={e => setSelectedManager(e.target.value)}
-              style={{ fontSize: 12, padding: '6px 12px', minWidth: 200 }}
-            >
-              {MANAGERS_LIST.map(mgr => (
-                <option key={mgr.id} value={mgr.email}>{mgr.name}</option>
-              ))}
-            </select>
-          </div>
+          {/* Manager Filter Dropdown (Only visible if not locked to single portal) */}
+          {!activeMgrEmail && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Filter size={14} color="var(--text-muted)" />
+              <select
+                className="select"
+                value={selectedManager}
+                onChange={e => setSelectedManager(e.target.value)}
+                style={{ fontSize: 12, padding: '6px 12px', minWidth: 220 }}
+              >
+                {MANAGERS_LIST.map(mgr => (
+                  <option key={mgr.id} value={mgr.email}>{mgr.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Month Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -204,7 +276,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
           </div>
 
           {/* Search BD */}
-          <div style={{ width: 200 }} className="input-with-icon">
+          <div style={{ width: 220 }} className="input-with-icon">
             <Search size={14} className="input-icon" />
             <input
               className="input"
@@ -215,29 +287,29 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
             />
           </div>
 
-          <div style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>
-            Showing <strong style={{ color: 'var(--text-heading)' }}>{teamBDs.length}</strong> BDs · MTD Total: <strong style={{ color: 'var(--primary)' }}>{mode === 'revenue' ? `₹ ${(grandMTDTotal / 1000).toFixed(1)}k` : grandMTDTotal}</strong>
+          <div style={{ marginLeft: 'auto', fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)' }}>
+            Showing <strong style={{ color: 'var(--text-heading)' }}>{teamBDs.length}</strong> Team Members · MTD Total: <strong style={{ color: '#2563eb', fontSize: 14 }}>{mode === 'revenue' ? `₹ ${(grandMTDTotal / 1000).toFixed(1)}k` : grandMTDTotal}</strong>
           </div>
         </div>
       </div>
 
       {/* Spreadsheet Matrix Table Card */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
         <div style={{ overflowX: 'auto', maxHeight: '72vh' }}>
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 11.5, fontFamily: 'Inter, sans-serif' }}>
             <thead>
               {/* Daily Sum Header Row */}
-              <tr style={{ background: isDark ? 'rgba(30,41,59,0.95)' : '#f8fafc', color: 'var(--text-heading)', fontWeight: 800 }}>
+              <tr style={{ background: isDark ? 'rgba(30,41,59,0.98)' : '#f8fafc', color: 'var(--text-heading)', fontWeight: 800 }}>
                 <th style={{
                   position: 'sticky', left: 0, top: 0, zIndex: 10,
                   background: isDark ? '#1e293b' : '#f1f5f9',
                   padding: '12px 16px', borderBottom: '2px solid var(--border)',
-                  borderRight: '2px solid var(--border)', textAlign: 'left', minWidth: 220
+                  borderRight: '2px solid var(--border)', textAlign: 'left', minWidth: 230
                 }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {mode.toUpperCase()} TOTAL SUMMARY
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--primary)', marginTop: 2 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 900, color: '#2563eb', marginTop: 2 }}>
                     Team Daily Totals 📊
                   </div>
                 </th>
@@ -247,7 +319,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                   background: isDark ? '#1e293b' : '#f1f5f9',
                   padding: '12px 10px', borderBottom: '2px solid var(--border)',
                   borderRight: '2px solid var(--border)', textAlign: 'center', minWidth: 90,
-                  fontSize: 13, color: 'var(--primary)', fontWeight: 900
+                  fontSize: 13, color: '#2563eb', fontWeight: 900
                 }}>
                   {mode === 'revenue' ? `₹ ${(grandMTDTotal / 1000).toFixed(1)}k` : grandMTDTotal}
                 </th>
@@ -258,12 +330,12 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                   return (
                     <th key={dateStr} style={{
                       position: 'sticky', top: 0, zIndex: 8,
-                      background: isToday ? (isDark ? 'rgba(37,99,235,0.25)' : '#e0e7ff') : (isDark ? '#1e293b' : '#f1f5f9'),
+                      background: isToday ? (isDark ? 'rgba(37,99,235,0.3)' : '#dbeafe') : (isDark ? '#1e293b' : '#f1f5f9'),
                       padding: '10px 8px', borderBottom: '2px solid var(--border)',
-                      borderRight: '1px solid var(--border)', textAlign: 'center', minWidth: 44,
+                      borderRight: '1px solid var(--border)', textAlign: 'center', minWidth: 46,
                       color: isToday ? '#2563eb' : 'var(--text-heading)', fontWeight: 800
                     }}>
-                      <div style={{ fontSize: 12, fontStyle: 'italic', color: dayTotal > 0 ? (isDark ? '#38bdf8' : '#0284c7') : 'var(--text-muted)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: dayTotal > 0 ? (isDark ? '#38bdf8' : '#0284c7') : 'var(--text-faint)' }}>
                         {mode === 'revenue' ? (dayTotal >= 1000 ? `${(dayTotal / 1000).toFixed(0)}k` : dayTotal) : dayTotal}
                       </div>
                     </th>
@@ -327,14 +399,14 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                         borderBottom: '1px solid var(--border)', borderRight: '2px solid var(--border)',
                         fontWeight: 700, color: 'var(--text-heading)'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--primary-dim)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(37,99,235,0.12)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12 }}>
                             {(bd.name || 'B')[0]}
                           </div>
                           <div>
-                            <div style={{ fontSize: 12, fontWeight: 700 }}>{bd.name}</div>
-                            <div style={{ fontSize: 9.5, color: 'var(--text-muted)', fontWeight: 600 }}>
-                              {bd.role || 'BD'} · {bd.state || 'India'}
+                            <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-heading)' }}>{bd.name}</div>
+                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, marginTop: 1 }}>
+                              <span style={{ color: '#2563eb', fontWeight: 700 }}>{bd.role || 'BD'}</span> · {bd.city || bd.state || 'Haryana'}
                             </div>
                           </div>
                         </div>
@@ -344,8 +416,8 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                       <td style={{
                         padding: '10px 8px', borderBottom: '1px solid var(--border)',
                         borderRight: '2px solid var(--border)', textAlign: 'center',
-                        fontWeight: 800, fontSize: 12, color: mtdTotal > 0 ? 'var(--primary)' : 'var(--text-muted)',
-                        background: isDark ? 'rgba(37,99,235,0.06)' : '#f0f7ff'
+                        fontWeight: 900, fontSize: 12.5, color: mtdTotal > 0 ? '#2563eb' : 'var(--text-muted)',
+                        background: isDark ? 'rgba(37,99,235,0.08)' : '#f0f7ff'
                       }}>
                         {mode === 'revenue' ? (mtdTotal >= 100000 ? `₹ ${(mtdTotal / 100000).toFixed(1)}L` : `₹ ${(mtdTotal / 1000).toFixed(1)}k`) : mtdTotal}
                       </td>
@@ -356,15 +428,16 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                         const val = cellData.val;
                         const isToday = dateStr === systemTodayStr;
 
-                        // Pink background for 0 values matching Google Sheet style
+                        // Vibrant active cell badge vs elegant subtle neutral dot for 0
                         const cellStyle = val > 0 ? {
-                          background: isToday ? (isDark ? 'rgba(37,99,235,0.25)' : '#dbeafe') : (isDark ? 'rgba(16,185,129,0.12)' : '#f0fdf4'),
+                          background: isToday ? (isDark ? 'rgba(37,99,235,0.3)' : '#dbeafe') : (isDark ? 'rgba(16,185,129,0.18)' : '#dcfce7'),
                           color: isDark ? '#34d399' : '#15803d',
-                          fontWeight: 800
+                          fontWeight: 900,
+                          boxShadow: 'inset 0 0 0 1px rgba(16,185,129,0.3)'
                         } : {
-                          background: isDark ? 'rgba(244,63,94,0.08)' : '#fce7f3',
-                          color: isDark ? '#f43f5e' : '#be185d',
-                          fontWeight: 600
+                          background: isDark ? 'rgba(255,255,255,0.02)' : '#fafafa',
+                          color: isDark ? 'rgba(255,255,255,0.2)' : '#d1d5db',
+                          fontWeight: 500
                         };
 
                         return (
@@ -374,11 +447,11 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                             style={{
                               padding: '8px 4px', borderBottom: '1px solid var(--border)',
                               borderRight: '1px solid var(--border)', textAlign: 'center',
-                              fontSize: 11, transition: 'all 0.15s ease', cursor: 'pointer',
+                              fontSize: val > 0 ? 12 : 11, transition: 'all 0.15s ease', cursor: 'pointer',
                               ...cellStyle
                             }}
                           >
-                            {mode === 'revenue' ? (val > 0 ? (val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val) : 0) : val}
+                            {mode === 'revenue' ? (val > 0 ? (val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val) : '0') : val}
                           </td>
                         );
                       })}
@@ -393,14 +466,14 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
 
       {/* Legend Footer Card */}
       <div className="card" style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 11, fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 11.5, fontWeight: 700 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 14, height: 14, borderRadius: 4, background: isDark ? 'rgba(16,185,129,0.2)' : '#f0fdf4', border: '1px solid #10b981' }} />
+            <span style={{ width: 14, height: 14, borderRadius: 4, background: '#dcfce7', border: '1px solid #16a34a' }} />
             <span style={{ color: 'var(--text-heading)' }}>Active Field Punches (&gt;0)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 14, height: 14, borderRadius: 4, background: '#fce7f3', border: '1px solid #be185d' }} />
-            <span style={{ color: 'var(--text-heading)' }}>Zero Activity (0)</span>
+            <span style={{ width: 14, height: 14, borderRadius: 4, background: '#fafafa', border: '1px solid #d1d5db' }} />
+            <span style={{ color: 'var(--text-muted)' }}>Zero Punches (0)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 14, height: 14, borderRadius: 4, background: '#2563eb' }} />
@@ -409,7 +482,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
         </div>
 
         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-          * Scroll horizontally to view all days of the month. Sticky headers and BD names remain fixed.
+          * Sticky header &amp; left team column remain fixed while scrolling dates horizontally.
         </div>
       </div>
     </div>
