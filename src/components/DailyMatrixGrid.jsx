@@ -84,7 +84,7 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return days;
   }, [selectedMonth]);
 
-  // Filter team BDs strictly according to active manager (including ISAs)
+  // Filter team BDs strictly according to active manager (Business Development above, ISAs below)
   const teamBDs = useMemo(() => {
     let list = (allData.salespersons || []);
     const mgrToFilter = activeMgrEmail || selectedManager;
@@ -97,7 +97,13 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
       const t = searchBD.trim().toLowerCase();
       list = list.filter(s => (s.name || '').toLowerCase().includes(t));
     }
-    return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    return list.sort((a, b) => {
+      const isAIsa = a.role === 'ISA' ? 1 : 0;
+      const isBIsa = b.role === 'ISA' ? 1 : 0;
+      if (isAIsa !== isBIsa) return isAIsa - isBIsa;
+      return (a.name || '').localeCompare(b.name || '');
+    });
   }, [allData.salespersons, activeMgrEmail, selectedManager, searchBD]);
 
   // Get manager-scoped visit CSV records directly from manager's dedicated Metabase CSV
@@ -469,28 +475,53 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                 matrixData.map(({ bd, dailyMap, mtdTotal }, rowIdx) => {
                   const isEven = rowIdx % 2 === 0;
                   const rowBg = isEven ? (isDark ? 'var(--bg-card)' : '#ffffff') : (isDark ? 'rgba(255,255,255,0.02)' : '#f8fafc');
+                  const isISA = bd.role === 'ISA';
+                  const isFirstISA = isISA && (rowIdx === 0 || matrixData[rowIdx - 1].bd.role !== 'ISA');
 
                   return (
-                    <tr key={bd.id || bd.name} style={{ background: rowBg }}>
-                      {/* BD Name Column (Sticky Left) */}
-                      <td style={{
-                        position: 'sticky', left: 0, zIndex: 5,
-                        background: rowBg, padding: '10px 16px',
-                        borderBottom: '1px solid var(--border)', borderRight: '2px solid var(--border)',
-                        fontWeight: 700, color: 'var(--text-heading)'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(37,99,235,0.12)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12 }}>
-                            {(bd.name || 'B')[0]}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-heading)' }}>{bd.name}</div>
-                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, marginTop: 1 }}>
-                              <span style={{ color: '#2563eb', fontWeight: 700 }}>{bd.role || 'BD'}</span> · {bd.city || bd.state || 'Haryana'}
+                    <React.Fragment key={bd.id || bd.name}>
+                      {isFirstISA && (
+                        <tr style={{ background: isDark ? '#1e1b4b' : '#f5f3ff' }}>
+                          <td
+                            colSpan={monthDays.length + 2}
+                            style={{
+                              padding: '8px 16px', borderTop: '2px solid #8b5cf6', borderBottom: '2px solid #8b5cf6',
+                              fontSize: 11, letterSpacing: '0.05em', textTransform: 'uppercase',
+                              position: 'sticky', left: 0, zIndex: 6, background: isDark ? '#1e1b4b' : '#f5f3ff'
+                            }}
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#7c3aed', fontWeight: 900 }}>
+                              🎧 INSIDE SALES ASSOCIATES (ISA)
+                            </span>
+                          </td>
+                        </tr>
+                      )}
+
+                      <tr style={{ background: rowBg }}>
+                        {/* BD Name Column (Sticky Left) */}
+                        <td style={{
+                          position: 'sticky', left: 0, zIndex: 5,
+                          background: rowBg, padding: '10px 16px',
+                          borderBottom: '1px solid var(--border)', borderRight: '2px solid var(--border)',
+                          fontWeight: 700, color: 'var(--text-heading)'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{
+                              width: 28, height: 28, borderRadius: '50%',
+                              background: isISA ? 'rgba(139,92,246,0.15)' : 'rgba(37,99,235,0.12)',
+                              color: isISA ? '#7c3aed' : '#2563eb',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12
+                            }}>
+                              {(bd.name || 'B')[0]}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-heading)' }}>{bd.name}</div>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, marginTop: 1 }}>
+                                <span style={{ color: isISA ? '#7c3aed' : '#2563eb', fontWeight: 700 }}>{bd.role || 'BD'}</span> · {bd.city || bd.state || 'Haryana'}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
                       {/* MTD Total Column */}
                       <td style={{
@@ -536,7 +567,8 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
                         );
                       })}
                     </tr>
-                  );
+                  </React.Fragment>
+                );
                 })
               )}
             </tbody>
