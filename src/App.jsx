@@ -14,6 +14,7 @@ import RedAlertDashboard from './components/RedAlertDashboard';
 import ManagerTeamDashboard from './components/ManagerTeamDashboard';
 import IndividualBDDashboard from './components/IndividualBDDashboard';
 import OnboardingPayments from './components/OnboardingPayments';
+import DailyMatrixGrid from './components/DailyMatrixGrid';
 import { Menu, Sun, Moon, RefreshCw } from 'lucide-react';
 import { getData, fetchLiveData } from './data/dataService';
 
@@ -290,6 +291,9 @@ const App = () => {
 
       case 'onboarding':
         return <OnboardingPayments theme={theme} initialManager={mgrConfig?.email || 'ALL'} />;
+
+      case 'matrix':
+        return <DailyMatrixGrid globalFilters={effectiveFilters} initialManager={mgrConfig?.email} theme={theme} />;
 
       // 👤 Dedicated Manager Dashboards
       case 'mgr_rajnish':

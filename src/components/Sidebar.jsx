@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Users, UserCheck, Map, Table2,
-  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft, X, DollarSign, LogOut
+  Lightbulb, Database, Sun, Moon, Bus, AlertTriangle, UserCog, Lock, ArrowLeft, X, DollarSign, LogOut, Grid
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, currentManagerParam, sidebarOpen, setSidebarOpen, user, onLogout }) => {
@@ -15,6 +15,7 @@ const Sidebar = ({ activeTab, setActiveTab, theme, toggleTheme, onOpenConfig, cu
 
   const toolsNav = [
     { id: 'candidates', label: 'Candidate Profiles',  icon: UserCheck,     badge: null },
+    { id: 'matrix',     label: 'Daily Performance Grid', icon: Grid,       badge: 'New' },
     { id: 'map',        label: 'Live Visit Map',      icon: Map,           badge: 'Live' },
     { id: 'table',      label: 'Visit Records',       icon: Table2,        badge: null },
     { id: 'onboarding', label: 'Onboarding Payments', icon: DollarSign, badge: null },

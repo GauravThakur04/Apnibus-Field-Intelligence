@@ -9,6 +9,7 @@ import { getData, getStats, getVisitsTrend, getRoleMetrics, getRMCombinedSales, 
 import { getBDRiskScores, getVisitForecast, getAINarrativeInsights, getTeamHealthIndex } from '../data/aiEngine';
 import IndividualBDDashboard from './IndividualBDDashboard';
 import HeadPerformanceView from './HeadPerformanceView';
+import DailyMatrixGrid from './DailyMatrixGrid';
 
 const MANAGER_CONFIGS = {
   'rajnish.kumar@apnibus.com': {
@@ -692,6 +693,11 @@ const ManagerTeamDashboard = ({ managerEmail, theme }) => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Team Daily Matrix Grid Section */}
+      <div style={{ marginTop: 24 }}>
+        <DailyMatrixGrid initialManager={managerEmail} theme={theme} />
       </div>
     </div>
   );
