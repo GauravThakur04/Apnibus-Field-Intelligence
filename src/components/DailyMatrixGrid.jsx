@@ -84,13 +84,13 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return days;
   }, [selectedMonth]);
 
-  // Filter team BDs strictly according to active manager
+  // Filter team BDs strictly according to active manager (including ISAs)
   const teamBDs = useMemo(() => {
     let list = (allData.salespersons || []);
     const mgrToFilter = activeMgrEmail || selectedManager;
 
     if (mgrToFilter && mgrToFilter !== 'ALL') {
-      list = list.filter(s => s && s.manager_email === mgrToFilter && s.role !== 'ISA');
+      list = list.filter(s => s && s.manager_email === mgrToFilter);
     }
 
     if (searchBD.trim()) {
