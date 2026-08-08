@@ -127,26 +127,24 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return (allData.visits || []).filter(v => formatToISODate(v.visit_date).startsWith(selectedMonth));
   }, [allData.visits, selectedMonth]);
 
-  // Filter order records for the selected month
-  const monthOrders = useMemo(() => {
-    const rawOnboarding = (allData._rawOnboarding || []).map(r => ({ ...r, _source: 'onboarding' }));
-    const rawSales = (allData._rawSales || []).map(r => ({ ...r, _source: 'sales' }));
-    const combined = [...rawOnboarding, ...rawSales];
-
-    return combined.filter(o => {
+  // Filter Onboarding Payments records for the selected month (Sales punches & Revenue)
+  const monthOnboardingOrders = useMemo(() => {
+    const rawOnboarding = (allData._rawOnboarding || []);
+    return rawOnboarding.filter(o => {
+      if (String(o.payment_status || '').toUpperCase() === 'C') return false;
       const d = formatToISODate(o.created_on || o.order_date || '');
       return d.startsWith(selectedMonth);
     });
-  }, [allData._rawOnboarding, allData._rawSales, selectedMonth]);
+  }, [allData._rawOnboarding, selectedMonth]);
 
   // Build matrix dataset
   const matrixData = useMemo(() => {
     return teamBDs.map(bd => {
-      // Get visits for this BD
+      // Get visits for this BD from Visit CSVs
       const bdVisits = monthVisits.filter(v => matchesBD(bd, v));
 
-      // Get orders for this BD
-      const bdOrders = monthOrders.filter(o => matchesBD(bd, o));
+      // Get sales & revenue for this BD strictly from Onboarding Payments CSV
+      const bdOrders = monthOnboardingOrders.filter(o => matchesBD(bd, o));
 
       // Daily map
       const dailyMap = {};
