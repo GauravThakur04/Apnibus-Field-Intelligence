@@ -1515,6 +1515,10 @@ export const fetchLiveData = async () => {
       _rawOnboarding: rawOnboarding,
       _rawAttendance: rawAttendance,
       _rawLocations: rawLocations,
+      _rawSonuVisits: rawSonuVisits,
+      _rawTarunVisits: rawTarunVisits,
+      _rawRajnishVisits: rawRajnishVisits,
+      _rawRajwinderVisits: rawRajwinderVisits,
       _lastDate: systemTodayStr
     };
 

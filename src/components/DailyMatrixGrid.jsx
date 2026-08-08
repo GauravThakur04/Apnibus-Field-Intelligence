@@ -100,10 +100,28 @@ const DailyMatrixGrid = ({ globalFilters = {}, initialManager, theme }) => {
     return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [allData.salespersons, activeMgrEmail, selectedManager, searchBD]);
 
-  // Filter visits for the selected month
+  // Get manager-scoped visit CSV records directly from manager's dedicated Metabase CSV
+  const targetVisits = useMemo(() => {
+    const mgrToFilter = activeMgrEmail || selectedManager;
+    if (mgrToFilter === 'sonu.mishra@apnibus.com') {
+      return (allData._rawSonuVisits || allData.visits || []);
+    }
+    if (mgrToFilter === 'tarun.kumar@apnibus.com') {
+      return (allData._rawTarunVisits || allData.visits || []);
+    }
+    if (mgrToFilter === 'rajnish.kumar@apnibus.com') {
+      return (allData._rawRajnishVisits || allData.visits || []);
+    }
+    if (mgrToFilter === 'rajwinder.singh@apnibus.com') {
+      return (allData._rawRajwinderVisits || allData.visits || []);
+    }
+    return (allData.visits || []);
+  }, [allData, activeMgrEmail, selectedManager]);
+
+  // Filter visits for the selected month from the manager's dedicated CSV
   const monthVisits = useMemo(() => {
-    return (allData.visits || []).filter(v => formatToISODate(v.visit_date).startsWith(selectedMonth));
-  }, [allData.visits, selectedMonth]);
+    return targetVisits.filter(v => formatToISODate(v.visit_date || v.date || '').startsWith(selectedMonth));
+  }, [targetVisits, selectedMonth]);
 
   // Filter Onboarding Payments records using DATE-SCOPED resolution logic
   const monthOnboardingOrders = useMemo(() => {
